@@ -36,7 +36,7 @@
 
 - [ ] C1. Agent runtime Python: chạy 1 job trên 1 repo (Phase 1) — code + worker xong trong `agent-runtime/`, test bằng agent giả; chờ chạy thật lần đầu với Claude trên QLKho (nhánh `system_test`)
 - [ ] C2. Multi-agent: phân tích, kế hoạch, code, test, review, sửa (Phase 2)
-- [ ] C3. API ASP.NET Core + PostgreSQL: project, job, workflow có phiên bản, approval (Phase 3) — API xong, 11 test trên SQLite (`backend/`); còn PostgreSQL + migrations
+- [x] C3. API ASP.NET Core + PostgreSQL: project, job, workflow có phiên bản, approval (Phase 3) — API xong, 11 test trên SQLite; PostgreSQL có migrations và đã chạy thật trong Docker trên server (`deploy/`)
 - [ ] C4. Docker sandbox + hàng đợi (Phase 5)
 - [ ] C5. Giám sát: chi phí, token, chất lượng (Phase 6)
 - [x] C6. Áp hạn mức: server không giao job khi chạm hạn mức ngày; worker dừng giữa các node khi chạm hạn mức job (token). Chưa tạm dừng job đang chạy

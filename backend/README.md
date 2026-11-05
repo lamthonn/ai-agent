@@ -46,5 +46,5 @@ Worker (`X-Worker-Token`): `POST /internal/jobs/claim`, `/{id}/steps`, `/events`
 ## Đã kiểm chứng / chưa
 
 - Có test: đăng nhập, thành viên chỉ thấy project được cấp, người tạo không tự duyệt, phiên bản workflow bất biến + job giữ đúng phiên bản, kiểm tra workflow, nhận job một lần duy nhất, chạy tiếp sau duyệt, hạn mức token theo ngày, hủy job.
-- **Chưa thử với PostgreSQL** (máy chưa có Docker/PostgreSQL). Cần tạo migrations (hiện dùng `EnsureCreated`) và chạy thử bộ test trên PostgreSQL.
+- PostgreSQL: có migrations (`Data/Migrations`), đã chạy thật trong Docker (xem `deploy/README.md`): đăng nhập, tạo job, worker nhận job một lần duy nhất, hoàn tất. Bộ test tự động vẫn chạy trên SQLite (không cần Docker).
 - Chưa có: log realtime SignalR (hiện đọc `events?after=`), "yêu cầu sửa" ở bước duyệt, tạm dừng job đang chạy khi chạm hạn mức, giới hạn thử đăng nhập sai, email cảnh báo hạn mức.
