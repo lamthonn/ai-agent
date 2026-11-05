@@ -1,0 +1,33 @@
+{
+  "id": "ai-coding",
+  "version": 3,
+  "nodes": [
+    { "id": "start", "type": "start", "label": "Bắt đầu" },
+    { "id": "analyze", "type": "agent", "label": "Phân tích yêu cầu", "agent": "requirement-analyzer" },
+    { "id": "plan", "type": "agent", "label": "Lập kế hoạch", "agent": "architect" },
+    { "id": "approve_plan", "type": "approval", "label": "Duyệt kế hoạch", "approver": "project" },
+    { "id": "code", "type": "agent", "label": "Viết code", "agent": "coder" },
+    { "id": "build_test", "type": "test", "label": "Build & test", "command": "{project.build} && {project.test}" },
+    { "id": "build_ok", "type": "condition", "label": "Build & test đạt?", "expr": "exit_code == 0" },
+    { "id": "fix", "type": "agent", "label": "Sửa lỗi", "agent": "fixer", "maxLoops": 3 },
+    { "id": "review", "type": "agent", "label": "Review code", "agent": "code-reviewer" },
+    { "id": "review_ok", "type": "condition", "label": "Review đạt?", "expr": "review.verdict == \"pass\"" },
+    { "id": "approve_merge", "type": "approval", "label": "Duyệt merge", "approver": "project" },
+    { "id": "end", "type": "end", "label": "Báo cáo & kết thúc" }
+  ],
+  "edges": [
+    { "from": "start", "to": "analyze" },
+    { "from": "analyze", "to": "plan" },
+    { "from": "plan", "to": "approve_plan" },
+    { "from": "approve_plan", "to": "code" },
+    { "from": "code", "to": "build_test" },
+    { "from": "build_test", "to": "build_ok" },
+    { "from": "build_ok", "to": "review", "when": true },
+    { "from": "build_ok", "to": "fix", "when": false },
+    { "from": "fix", "to": "build_test" },
+    { "from": "review", "to": "review_ok" },
+    { "from": "review_ok", "to": "approve_merge", "when": true },
+    { "from": "review_ok", "to": "fix", "when": false },
+    { "from": "approve_merge", "to": "end" }
+  ]
+}

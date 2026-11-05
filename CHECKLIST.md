@@ -34,7 +34,7 @@
 
 ## C. Backend & runtime (kế hoạch chi tiết: [docs/BACKEND-PLAN.md](docs/BACKEND-PLAN.md))
 
-- [ ] C1. Agent runtime Python: chạy 1 job trên 1 repo (Phase 1)
+- [ ] C1. Agent runtime Python: chạy 1 job trên 1 repo (Phase 1) — code xong trong `agent-runtime/`, đã test bằng agent giả; chờ chạy thật lần đầu trên QLKho (nhánh `system_test`)
 - [ ] C2. Multi-agent: phân tích, kế hoạch, code, test, review, sửa (Phase 2)
 - [ ] C3. API ASP.NET Core + PostgreSQL: project, job, workflow có phiên bản, approval (Phase 3)
 - [ ] C4. Docker sandbox + hàng đợi (Phase 5)
