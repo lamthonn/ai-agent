@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { App, Button, Select, Table } from 'antd';
 import { Link, useNavigate } from 'react-router-dom';
-import { jobs, people, projects } from '../data/sample';
+import { allJobs as jobs, people, projects } from '../data/sample';
 import { latest, workflowById, workflows } from '../data/workflows';
 import { fmtAmount, usedToday, useBudget } from '../data/budget';
 import { approversOf, canSee, isAdmin, useMe } from '../data/access';

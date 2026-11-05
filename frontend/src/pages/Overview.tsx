@@ -1,10 +1,10 @@
-// Overview. The screen's question: "What is waiting on me?" The finding: JOB-0148 used all its fix rounds.
+// Overview. The screen's question: "What is waiting on me?"
 import { Button } from 'antd';
 import { Link, useNavigate } from 'react-router-dom';
-import { approvals, jobById, jobs, NOW, projectById, projects, stepLabels, workers } from '../data/sample';
+import { allJobs, approvals, jobById, jobs, NOW, projectById, projects, stepLabels, workers } from '../data/sample';
 import { versionOf } from '../data/workflows';
 import { budgetState, fmtAmount, usedToday, useBudget } from '../data/budget';
-import { canSee, useMe } from '../data/access';
+import { approvalCheck, canSee, useMe } from '../data/access';
 import type { Job } from '../data/types';
 import { RunTrace, TraceLegend, currentStep, maxFixOf } from '../components/RunTrace';
 import { StatusPill } from '../components/StatusPill';
@@ -19,7 +19,7 @@ const startOfDay = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDat
 const inWindow = (j: Job, from: Date, to: Date) => j.start >= from && j.start < to;
 
 export function windowStats(from: Date, to: Date, keep: (j: Job) => boolean = () => true) {
-  const list = jobs.filter((j) => inWindow(j, from, to) && keep(j));
+  const list = allJobs.filter((j) => inWindow(j, from, to) && keep(j));
   const finished = list.filter((j) => j.status === 'succeeded' || j.status === 'failed');
   const ok = finished.filter((j) => j.status === 'succeeded').length;
   const done = list.filter((j) => j.end);
@@ -46,7 +46,8 @@ export function Overview() {
   const w = windowStats(wFrom, tomorrow, keep), prev = windowStats(pFrom, wFrom, keep);
 
   const failed = jobs.filter((j) => j.status === 'failed' && j.start >= today && mine(j.project));
-  const pending = approvals.filter((a) => a.status === 'pending' && mine(jobById[a.job].project));
+  // only what this account can act on: its projects, minus its own jobs when self-approval is off
+  const pending = approvals.filter((a) => a.status === 'pending' && approvalCheck(me, jobById[a.job]).ok);
   const attention = [
     ...failed.map((j) => ({ job: j, reason: j.note ? tx(j.note) : tr('Job lỗi', 'Job failed'), since: j.end!, action: tr('Xem log', 'View log'), to: `/jobs/${j.id}` })),
     ...pending.map((a) => ({ job: jobById[a.job], reason: a.kind === 'plan' ? tr('Kế hoạch chờ duyệt trước khi viết code', 'Plan awaits approval before coding') : tr('Đã qua test và review, chờ duyệt merge', 'Passed tests and review, awaits merge approval'), since: a.requested, action: a.kind === 'plan' ? tr('Duyệt kế hoạch', 'Review plan') : tr('Duyệt merge', 'Review merge'), to: `/approvals/${a.id}` })),
@@ -57,7 +58,7 @@ export function Overview() {
   const headSteps = live[0] ? versionOf(live[0].workflowId, live[0].workflowVersion).steps : [];
 
   const days = [...Array(14)].map((_, i) => new Date(today.getTime() - (13 - i) * DAY));
-  const perDay = days.map((d) => jobs.filter((j) => inWindow(j, d, new Date(d.getTime() + DAY)) && keep(j)).length);
+  const perDay = days.map((d) => allJobs.filter((j) => inWindow(j, d, new Date(d.getTime() + DAY)) && keep(j)).length);
 
 
   const spent = usedToday(budget);

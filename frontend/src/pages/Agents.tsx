@@ -2,7 +2,7 @@
 import { useEffect } from 'react';
 import { App, Button, Checkbox, Form, Input, InputNumber, Select } from 'antd';
 import { useNavigate, useParams } from 'react-router-dom';
-import { agents, jobs } from '../data/sample';
+import { agents, allJobs as jobs } from '../data/sample';
 import { latest, workflows } from '../data/workflows';
 import type { Agent } from '../data/types';
 import { useTitle } from '../lib/useTitle';

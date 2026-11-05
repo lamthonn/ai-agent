@@ -9,7 +9,7 @@ import {
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { agents, jobs, people, projects } from '../data/sample';
+import { agents, allJobs as jobs, people, projects } from '../data/sample';
 import { latest, workflowById } from '../data/workflows';
 import type { NodeType, WfEdge, WfNode, Workflow, WorkflowVersion } from '../data/types';
 import { Icon } from '../components/Icon';

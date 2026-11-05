@@ -18,6 +18,7 @@
 - [x] A14. Hạn mức sử dụng: theo ngày, theo job, theo project, ngưỡng cảnh báo, hành động khi chạm mức, email
 - [x] A15. Phân quyền: Admin / Thành viên, cấp quyền theo project, thành viên chỉ thấy và duyệt job trong project được cấp (Cài đặt › Thành viên; đổi người dùng ở avatar)
 - [x] A16. Hạn mức tính theo USD hoặc token (quy đổi tự động)
+- [x] A17. Công tắc "Không tự duyệt job của mình" (mặc định bật; được tự duyệt nếu project không còn ai khác)
 
 ## B. Frontend còn thiếu
 
@@ -47,5 +48,6 @@
 - [x] D2. Song ngữ
 - [x] D3. Admin cấp quyền; ai vào được project thì duyệt được job của project đó
 - [x] D4. Hạn mức theo token (hoặc USD)
-- [ ] D5. Con số hạn mức thật (đang để mẫu: $25/ngày ≈ 6,9 triệu token)
-- [ ] D6. Có cho người tạo job tự duyệt job của mình không (đang là công tắc, mặc định cho phép)
+- [x] D5. Hạn mức mặc định $1/ngày, $0,50/job
+- [x] D6. Không tự duyệt job của mình: có công tắc, mặc định bật
+- [ ] D7. Chạy agent bằng Claude Pro hay API key (xem roadmap 3.2): Pro tính theo giới hạn lượt dùng, không theo USD

@@ -5,7 +5,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { approvals, jobById, people, projectById } from '../data/sample';
 import { contentFor } from '../data/jobContent';
 import { RunTrace } from '../components/RunTrace';
-import { approversOf, canApprove, canSee, useMe } from '../data/access';
+import { approvalCheck, canSee, jobApprovers, useAccess, useMe } from '../data/access';
 import { Avatar, WorkflowRef } from '../components/StatusPill';
 import { clock, duration, minutesAgo } from '../lib/format';
 import { useTitle } from '../lib/useTitle';
@@ -22,7 +22,9 @@ export function Approvals() {
   const pending = visible.filter((a) => a.status === 'pending');
   const decided = visible.filter((a) => a.status !== 'pending');
   const sel = visible.find((a) => a.id === id) ?? pending[0] ?? decided[0];
-  const allowed = sel ? canApprove(me, jobById[sel.job].project) : false;
+  useAccess(); // re-render when the self-approval rule changes
+  const check = sel ? approvalCheck(me, jobById[sel.job]) : null;
+  const allowed = !!check?.ok;
   const job = sel ? jobById[sel.job] : undefined;
   const c = job ? contentFor(job) : undefined;
 
@@ -56,7 +58,7 @@ export function Approvals() {
               <span className="meta nowrap">{sel.status === 'pending' ? tr(`Chờ ${duration(minutesAgo(sel.requested))}`, `Waiting ${duration(minutesAgo(sel.requested))}`) : tr(`Duyệt lúc ${clock(sel.decided!)} bởi ${people[sel.by!].name}`, `Approved at ${clock(sel.decided!)} by ${people[sel.by!].name}`)}</span>
             </header>
             <RunTrace job={job} />
-            <p className="approvers"><span className="muted">{tr('Người duyệt được', 'Can approve')}:</span> {approversOf(job.project).map((a) => a.name).join(', ')}</p>
+            <p className="approvers"><span className="muted">{tr('Người duyệt được', 'Can approve')}:</span> {jobApprovers(job).map((a) => a.name).join(', ')}</p>
 
             {sel.kind === 'plan' && 'plan' in c && c.plan && (
               <div className="doc">
@@ -84,7 +86,9 @@ export function Approvals() {
               </div>
             )}
 
-            {sel.status === 'pending' && !allowed && <p className="finding">{tr('Bạn xem được nhưng không duyệt được yêu cầu này.', 'You can see this request but cannot approve it.')}</p>}
+            {sel.status === 'pending' && check && !check.ok && <p className="finding">{check.reason === 'own-job'
+              ? tr(`Bạn tạo job này nên cần người khác duyệt: ${check.others.map((a) => a.name).join(', ')}.`, `You created this job, so someone else must approve it: ${check.others.map((a) => a.name).join(', ')}.`)
+              : tr('Bạn xem được nhưng không duyệt được yêu cầu này.', 'You can see this request but cannot approve it.')}</p>}
             {sel.status === 'pending' && allowed && (
               <footer className="decide">
                 <Input.TextArea rows={2} placeholder={tr('Ghi chú cho agent (bắt buộc khi yêu cầu sửa)', 'Note to the agent (required to request changes)')} value={comment} onChange={(e) => setComment(e.target.value)} aria-label={tr('Ghi chú', 'Note')} />

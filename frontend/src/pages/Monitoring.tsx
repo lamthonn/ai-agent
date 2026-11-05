@@ -1,6 +1,6 @@
 // Monitoring. Question: "Is the platform getting better or more expensive?" 14 days, per day.
 import { Link } from 'react-router-dom';
-import { jobs, NOW, projects } from '../data/sample';
+import { allJobs as jobs, NOW, projects } from '../data/sample';
 import { workflows } from '../data/workflows';
 import { fmtAmount, jobUse, useBudget } from '../data/budget';
 import { Chart } from '../components/Chart';

@@ -312,3 +312,4 @@ table.matrix th.c .avatar { margin: 0 auto; }
 .cell:hover:not(:disabled) { background: var(--raised); }
 .cell.on { background: var(--pill-run-bg); border-color: transparent; color: var(--pill-run-ink); }
 .cell:disabled { cursor: not-allowed; opacity: .7; }
+.detail-pane > .finding { margin: 16px 0 0; }

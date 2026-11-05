@@ -15,9 +15,7 @@ export const me = people.ma;
 
 export const projects: Project[] = [
   { id: 'qlkho', name: 'QLKho', repo: 'git.codes.tech/kho/QLKho.git', branch: 'develop', stack: 'ASP.NET Core 8', build: 'dotnet build', test: 'dotnet test', owner: 'tq', defaultWorkflow: 'ai-coding' },
-  { id: 'hddt', name: 'HoaDonDienTu-API', repo: 'git.codes.tech/hddt/HoaDonDienTu-API.git', branch: 'main', stack: 'ASP.NET Core 8', build: 'dotnet build', test: 'dotnet test', owner: 'tq', defaultWorkflow: 'ai-coding' },
   { id: 'web', name: 'CongThongTin-Web', repo: 'git.codes.tech/web/CongThongTin-Web.git', branch: 'main', stack: 'React 18 + Vite', build: 'npm run build', test: 'npm test -- --run', owner: 'lt', defaultWorkflow: 'ai-coding' },
-  { id: 'runtime', name: 'AgentRuntime', repo: 'git.codes.tech/ai/AgentRuntime.git', branch: 'main', stack: 'Python 3.12', build: 'uv sync', test: 'pytest -q', owner: 'ma', defaultWorkflow: 'quick-fix' },
 ];
 export const projectById = Object.fromEntries(projects.map((p) => [p.id, p]));
 
@@ -56,9 +54,7 @@ const pick = <T,>(a: T[]): T => a[Math.floor(rnd() * a.length)];
 
 const titles: Record<string, string[]> = {
   qlkho: ['Thêm bộ lọc kho theo chi nhánh', 'Cảnh báo tồn kho dưới định mức', 'Phiếu chuyển kho giữa chi nhánh', 'Xuất Excel danh sách vật tư', 'Kiểm kê định kỳ theo vị trí kệ', 'Sửa lỗi làm tròn đơn giá nhập', 'Phân quyền thủ kho theo kho'],
-  hddt: ['Ký số hóa đơn bằng HSM', 'Gửi email hóa đơn cho khách', 'Tra cứu hóa đơn theo mã tra cứu', 'Điều chỉnh hóa đơn sai thông tin', 'Đồng bộ trạng thái với cơ quan thuế', 'Thêm mẫu hóa đơn bán hàng'],
   web: ['Trang đăng nhập bằng mã OTP', 'Bộ lọc nâng cao trang hóa đơn', 'Sửa lỗi bảng trên màn hình nhỏ', 'Thêm trang thông báo hệ thống', 'Tối ưu tải danh sách khách hàng'],
-  runtime: ['Lưu log tool call vào artifact', 'Retry khi API trả lỗi 529', 'Ghi Git diff sau mỗi vòng sửa', 'Giới hạn token cho mỗi node'],
 };
 
 /** A finished run's trace, keeping only the steps its workflow version has. */
@@ -81,7 +77,8 @@ type RawJob = Omit<Job, 'minutes' | 'tokens' | 'cost' | 'branch' | 'end'>;
 const raw: RawJob[] = [];
 
 // 38 historical jobs, 23/10 to 04/11 (weekends quiet): JOB-0106 … JOB-0143.
-// Full AI coding ran v2 until v3 was saved on 29/10; AgentRuntime uses Quick fix v2.
+// History feeds the charts and stats only (allJobs); the lists show today's jobs (jobs).
+// Full AI coding ran v2 until v3 was saved on 29/10.
 const perDay: [string, number][] = [['2026-10-23', 3], ['2026-10-24', 4], ['2026-10-25', 0], ['2026-10-26', 0], ['2026-10-27', 4], ['2026-10-28', 5], ['2026-10-29', 3], ['2026-10-30', 4], ['2026-10-31', 3], ['2026-11-01', 1], ['2026-11-02', 0], ['2026-11-03', 5], ['2026-11-04', 6]];
 let n = 106;
 for (const [day, count] of perDay) {
@@ -106,62 +103,50 @@ for (const [day, count] of perDay) {
   }
 }
 
-// Today's eight jobs, written out by hand: the ones the screens talk about.
+// Today's two jobs, written out by hand: the ones the lists show.
 const at = (h: number, m: number) => new Date(2026, 10, 5, h, m);
 const T = (steps: StepId[], list: Partial<Record<StepId, Partial<TraceStep>>>): TraceStep[] =>
   steps.map((s) => ({ step: s, state: 'pending', min: 0, ...list[s] }) as TraceStep);
-const full = versionOf('ai-coding', 3).steps, quick = versionOf('quick-fix', 2).steps;
-const AC = { workflowId: 'ai-coding', workflowVersion: 3 }, QF = { workflowId: 'quick-fix', workflowVersion: 2 };
+const full = versionOf('ai-coding', 3).steps;
+const AC = { workflowId: 'ai-coding', workflowVersion: 3 };
 
-raw.push(
-  { id: 'JOB-0144', title: 'Sửa lỗi hiển thị ngày trên Safari', project: 'web', by: 'lt', status: 'succeeded', start: at(8, 42), fix: 1, ...QF, trace: doneTrace(quick, 1, 0, 7, 3, 2) },
-  { id: 'JOB-0145', title: 'Báo cáo nhập xuất tồn theo tháng', project: 'qlkho', by: 'tq', status: 'succeeded', start: at(9, 15), fix: 0, ...AC, trace: doneTrace(full, 0, 5, 16, 4, 3) },
-  { id: 'JOB-0146', title: 'Kiểm tra mã số thuế khi tạo khách hàng', project: 'hddt', by: 'tq', status: 'queued', start: at(14, 12), fix: 0, ...AC,
-    note: { vi: 'Chờ sandbox trống: sbx-01 và sbx-02 đang chạy, sbx-03 đang bảo trì', en: 'Waiting for a sandbox: sbx-01 and sbx-02 are busy, sbx-03 is in maintenance' }, trace: T(full, {}) },
-  { id: 'JOB-0147', title: 'Giới hạn thời gian chạy cho sandbox', project: 'runtime', by: 'ma', status: 'running', start: at(13, 50), fix: 1, ...AC,
-    trace: T(full, { analyze: { state: 'done', min: 2 }, plan: { state: 'done', min: 4 }, approve_plan: { state: 'done', min: 0 }, code: { state: 'done', min: 11 }, build_test: { state: 'running', min: 6 }, fix: { state: 'done', min: 4, rounds: 1 } }) },
-  { id: 'JOB-0148', title: 'Đồng bộ tồn kho theo lô', project: 'qlkho', by: 'tq', status: 'failed', start: at(10, 31), fix: 3, ...AC,
-    note: { vi: 'Hết 3/3 lần sửa, 2 test trong InventoryLotTests vẫn lỗi', en: 'Used 3 of 3 fix rounds; 2 tests in InventoryLotTests still fail' },
-    trace: T(full, { analyze: { state: 'done', min: 3 }, plan: { state: 'done', min: 6 }, approve_plan: { state: 'done', min: 0 }, code: { state: 'done', min: 19 }, build_test: { state: 'done', min: 16 }, fix: { state: 'failed', min: 21, rounds: 3 } }) },
+const today: RawJob[] = [
   { id: 'JOB-0149', title: 'Phân trang server-side cho trang tra cứu hóa đơn', project: 'web', by: 'lt', status: 'approval', approval: 'merge', start: at(11, 20), fix: 1, waitingSince: at(12, 6), ...AC,
     trace: T(full, { analyze: { state: 'done', min: 2 }, plan: { state: 'done', min: 4 }, approve_plan: { state: 'done', min: 0 }, code: { state: 'done', min: 14 }, build_test: { state: 'done', min: 8 }, fix: { state: 'done', min: 5, rounds: 1 }, review: { state: 'done', min: 3 }, approve_merge: { state: 'waiting', min: 0 } }) },
-  { id: 'JOB-0150', title: 'Xuất hóa đơn hàng loạt ra PDF', project: 'hddt', by: 'tq', status: 'approval', approval: 'plan', start: at(13, 33), fix: 0, waitingSince: at(13, 41), ...AC,
-    trace: T(full, { analyze: { state: 'done', min: 3 }, plan: { state: 'done', min: 5 }, approve_plan: { state: 'waiting', min: 0 } }) },
   { id: 'JOB-0151', title: 'Thêm API quản lý người dùng', project: 'qlkho', by: 'tq', status: 'running', start: at(13, 58), fix: 0, ...AC,
     trace: T(full, { analyze: { state: 'done', min: 2 }, plan: { state: 'done', min: 5 }, approve_plan: { state: 'done', min: 0 }, code: { state: 'running', min: 13 } }) },
-);
+];
 
 const slug = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 30).replace(/-[^-]*$/, '');
 
 // Derived fields: active minutes (approval waits excluded), tokens, cost, branch.
-export const jobs: Job[] = raw.map((j) => {
+const derive = (j: RawJob): Job => {
   const minutes = j.trace.reduce((a, s) => a + s.min, 0);
   const tokens = minutes * 9_400 + j.fix * 21_000;
   const cost = Math.round((tokens / 1_000_000) * 3.6 * 100) / 100;
   const branch = j.id === 'JOB-0151' ? 'feature/ai-user-management' : `ai/${j.id.toLowerCase()}-${slug(j.title)}`;
   const end = ['succeeded', 'failed', 'cancelled'].includes(j.status) ? new Date(j.start.getTime() + minutes * 60_000) : null;
   return { ...j, minutes, tokens, cost, branch, end };
-}).reverse(); // newest first
+};
 
-export const jobById: Record<string, Job> = Object.fromEntries(jobs.map((j) => [j.id, j]));
+/** Jobs the lists show: today's, newest first. */
+export const jobs: Job[] = today.map(derive).reverse();
+/** Every job incl. history, newest first: charts and stats count these. */
+export const allJobs: Job[] = [...jobs, ...raw.map(derive).reverse()];
+
+export const jobById: Record<string, Job> = Object.fromEntries(allJobs.map((j) => [j.id, j]));
 
 export const workers: Worker[] = [
   { id: 'sbx-01', image: 'agent-sandbox:dotnet8', state: 'busy', job: 'JOB-0151', cpu: 0.62, mem: 3.1, memMax: 6 },
-  { id: 'sbx-02', image: 'agent-sandbox:python312', state: 'busy', job: 'JOB-0147', cpu: 0.41, mem: 1.8, memMax: 4 },
-  { id: 'sbx-03', image: 'agent-sandbox:dotnet8', state: 'maintenance', job: null, cpu: 0, mem: 0, memMax: 6, note: { vi: 'Cập nhật image .NET 8.0.11, xong khoảng 15:00', en: 'Updating the .NET 8.0.11 image, done around 15:00' } },
+  { id: 'sbx-02', image: 'agent-sandbox:node20', state: 'idle', job: null, cpu: 0, mem: 0, memMax: 4 },
 ];
 
 export const approvals: Approval[] = [
-  { id: 'APR-0091', job: 'JOB-0150', kind: 'plan', requested: at(13, 41), status: 'pending' },
   { id: 'APR-0090', job: 'JOB-0149', kind: 'merge', requested: at(12, 6), status: 'pending' },
-  { id: 'APR-0089', job: 'JOB-0145', kind: 'merge', requested: at(9, 48), status: 'approved', by: 'ma', decided: at(10, 2) },
-  { id: 'APR-0088', job: 'JOB-0145', kind: 'plan', requested: at(9, 22), status: 'approved', by: 'ma', decided: at(9, 24) },
-  { id: 'APR-0087', job: 'JOB-0144', kind: 'merge', requested: at(9, 0), status: 'approved', by: 'lt', decided: at(9, 3) },
 ];
 
 // The facts the screens state in words, checked against the rows.
-console.assert(jobs.length === 46, 'expected 46 jobs', jobs.length);
-console.assert(jobById['JOB-0148'].trace.find((s) => s.step === 'fix')!.rounds === 3, 'JOB-0148 used 3 of 3 fixes');
+console.assert(jobs.length === 2 && allJobs.length === 40, 'expected 2 listed jobs, 40 in all', jobs.length, allJobs.length);
 console.assert(workers.filter((w) => w.state === 'busy').length === jobs.filter((j) => j.status === 'running').length, 'one busy sandbox per running job');
 console.assert(approvals.filter((a) => a.status === 'pending').every((a) => jobById[a.job].status === 'approval'), 'pending approvals match jobs waiting');
-console.assert(jobs.every((j) => j.trace.length === versionOf(j.workflowId, j.workflowVersion).steps.length), 'every trace matches its workflow version');
+console.assert(allJobs.every((j) => j.trace.length === versionOf(j.workflowId, j.workflowVersion).steps.length), 'every trace matches its workflow version');

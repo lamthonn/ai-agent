@@ -4,7 +4,7 @@ import { Dropdown, Segmented } from 'antd';
 import { Icon } from './Icon';
 import { Avatar } from './StatusPill';
 import { approvals, jobById, jobs, NOW } from '../data/sample';
-import { canSee, isAdmin, projectsOf, switchAccount, useAccess, useMe } from '../data/access';
+import { approvalCheck, canSee, isAdmin, projectsOf, switchAccount, useAccess, useMe } from '../data/access';
 import { setLang, tr, useLang, type Lang } from '../i18n';
 
 export const PRODUCT = 'Codes Loop';
@@ -20,7 +20,7 @@ export function Shell({ children }: { children: ReactNode }) {
   const me = useMe();
   const { accounts } = useAccess();
   // counts follow what this account can see
-  const pending = approvals.filter((a) => a.status === 'pending' && canSee(me, jobById[a.job].project)).length;
+  const pending = approvals.filter((a) => a.status === 'pending' && approvalCheck(me, jobById[a.job]).ok).length; // only what this account can act on
   const today = new Date(NOW.getFullYear(), NOW.getMonth(), NOW.getDate());
   const failedToday = jobs.filter((j) => j.status === 'failed' && j.start >= today && canSee(me, j.project)).length;
   const roleText = isAdmin(me) ? 'Admin' : tr(`Thành viên · ${projectsOf(me).length} project`, `Member · ${projectsOf(me).length} projects`);
@@ -35,7 +35,7 @@ export function Shell({ children }: { children: ReactNode }) {
   const nav = [
     { to: '/', label: tr('Tổng quan', 'Overview'), icon: 'overview', end: true },
     { to: '/jobs', label: 'Jobs', icon: 'jobs', count: failedToday, countLabel: tr('job lỗi hôm nay', 'failed today') },
-    { to: '/approvals', label: tr('Chờ duyệt', 'Approvals'), icon: 'approvals', count: pending, countLabel: tr('yêu cầu chờ duyệt', 'awaiting approval') },
+    { to: '/approvals', label: tr('Chờ duyệt', 'Approvals'), icon: 'approvals', count: pending, countLabel: tr('yêu cầu bạn duyệt được', 'you can approve') },
     { to: '/workflows', label: 'Workflows', icon: 'workflow' },
     { to: '/agents', label: 'Agents', icon: 'agents' },
     { to: '/projects', label: 'Projects', icon: 'projects' },

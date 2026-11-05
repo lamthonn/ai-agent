@@ -4,7 +4,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { approvals, jobById, people, projectById } from '../data/sample';
 import { contentFor } from '../data/jobContent';
 import { fmtAmount, useBudget } from '../data/budget';
-import { approversOf, canApprove, canSee, useMe } from '../data/access';
+import { approvalCheck, canSee, jobApprovers, useMe } from '../data/access';
 import { RunTrace, TraceLegend, currentStep, maxFixOf } from '../components/RunTrace';
 import { StatusPill, WorkflowRef } from '../components/StatusPill';
 import { Icon } from '../components/Icon';
@@ -28,12 +28,13 @@ export function JobDetail() {
   const apr = approvals.find((a) => a.job === job.id && a.status === 'pending');
   const fixStep = job.trace.find((s) => s.step === 'fix');
   const maxFix = maxFixOf(job);
+  const check = approvalCheck(me, job);
   const proto = (vi: string, en: string) => message.info(tr(`${vi} (prototype)`, `${en} (prototype)`));
 
   const actions = {
     running: <><Button icon={<Icon name="pause" />} onClick={() => proto('Đã gửi lệnh tạm dừng', 'Pause sent')}>{tr('Tạm dừng', 'Pause')}</Button><Popconfirm title={tr(`Hủy ${job.id}?`, `Cancel ${job.id}?`)} description={tr('Branch và workspace được giữ lại.', 'The branch and workspace are kept.')} okText={tr('Hủy job', 'Cancel job')} cancelText={tr('Không', 'No')} onConfirm={() => proto('Đã hủy', 'Cancelled')}><Button danger icon={<Icon name="stop" />}>{tr('Hủy', 'Cancel')}</Button></Popconfirm></>,
     queued: <Popconfirm title={tr(`Bỏ ${job.id} khỏi hàng đợi?`, `Remove ${job.id} from the queue?`)} okText={tr('Bỏ', 'Remove')} cancelText={tr('Không', 'No')}><Button danger>{tr('Bỏ khỏi hàng đợi', 'Remove from queue')}</Button></Popconfirm>,
-    approval: <Button type="primary" disabled={!canApprove(me, job.project)} title={canApprove(me, job.project) ? undefined : tr('Bạn không có quyền duyệt project này', 'You cannot approve in this project')} onClick={() => nav(`/approvals/${apr?.id}`)}>{job.approval === 'plan' ? tr('Duyệt kế hoạch', 'Review plan') : tr('Duyệt merge', 'Review merge')}</Button>,
+    approval: <Button type="primary" disabled={!check.ok} title={check.ok ? undefined : check.reason === 'own-job' ? tr('Bạn tạo job này nên cần người khác duyệt', 'You created this job; someone else must approve it') : tr('Bạn không có quyền duyệt project này', 'You cannot approve in this project')} onClick={() => nav(`/approvals/${apr?.id}`)}>{job.approval === 'plan' ? tr('Duyệt kế hoạch', 'Review plan') : tr('Duyệt merge', 'Review merge')}</Button>,
     failed: <><Button onClick={() => proto('Đã mở workspace', 'Workspace opened')}>{tr('Mở workspace', 'Open workspace')}</Button><Button type="primary" icon={<Icon name="play" />} onClick={() => proto('Đã chạy lại từ bước Sửa lỗi với thêm 2 vòng', 'Re-ran from Fix with 2 more rounds')}>{tr('Chạy lại bước sửa', 'Re-run fix step')}</Button></>,
     succeeded: <Button>{tr('Tải báo cáo', 'Download report')}</Button>,
     cancelled: <Button icon={<Icon name="play" />}>{tr('Chạy lại', 'Run again')}</Button>,
@@ -96,7 +97,7 @@ export function JobDetail() {
             <div><dt>Build</dt><dd><code>{p.build}</code></dd></div>
             <div><dt>Test</dt><dd><code>{p.test}</code></dd></div>
             <div><dt>{tr('Branch gốc', 'Base branch')}</dt><dd className="mono">{p.branch}</dd></div>
-            <div><dt>{tr('Người duyệt được', 'Can approve')}</dt><dd>{approversOf(job.project).map((a) => a.name).join(', ')}</dd></div>
+            <div><dt>{tr('Người duyệt được', 'Can approve')}</dt><dd>{jobApprovers(job).map((a) => a.name).join(', ')}</dd></div>
           </dl>
           <h3 className="sub-h">Artifact</h3>
           <ul className="rows compact">

@@ -4,7 +4,7 @@ import { App, Button, Form, Input, InputNumber, Modal, Popconfirm, Radio, Segmen
 import { useNavigate, useParams } from 'react-router-dom';
 import { projects } from '../data/sample';
 import { budgetState, convertUnit, defaultBudget, fmtAmount, fmtOther, saveBudget, usedToday, useBudget, type Budget } from '../data/budget';
-import { activeAdmins, isAdmin, projectsOf, removeAccount, resetAccess, saveAccount, useAccess, useMe, type Account } from '../data/access';
+import { activeAdmins, isAdmin, projectsOf, removeAccount, resetAccess, saveAccount, setRules, useAccess, useMe, type Account } from '../data/access';
 import { Avatar } from '../components/StatusPill';
 import { pct } from '../lib/format';
 import { useTitle } from '../lib/useTitle';
@@ -296,14 +296,17 @@ function SandboxSettings() {
 
 function ApprovalSettings() {
   const { message } = App.useApp();
+  const { rules } = useAccess();
+  // each switch saves itself (one save model for this view)
+  const saved = () => message.success(tr('Đã lưu', 'Saved'));
   return (
     <section className="set-row">
       <div className="set-label"><h2>{tr('Phê duyệt', 'Approvals')}</h2><p>{tr('Ai được duyệt: thành viên có quyền vào project của job, và mọi admin. Quyền cấp ở tab Thành viên.', 'Who can approve: members with access to the job’s project, and every admin. Access is granted in the Members tab.')}</p></div>
       <div className="set-panel">
-        <div className="switch-row"><div><div className="ink">{tr('Duyệt trước khi merge', 'Approve before merge')}</div><div className="hint">{tr('Không agent nào được merge vào branch gốc.', 'No agent may merge into a base branch.')}</div></div><Switch defaultChecked disabled aria-label={tr('Duyệt trước khi merge', 'Approve before merge')} /></div>
-        <div className="switch-row"><div><div className="ink">{tr('Không tự duyệt job của mình', 'No approving your own job')}</div><div className="hint">{tr('Người tạo job không duyệt được job đó, trừ khi project chỉ có một người.', 'The job’s creator cannot approve it, unless they are the project’s only member.')}</div></div><Switch aria-label={tr('Không tự duyệt job của mình', 'No approving your own job')} /></div>
-        <div className="switch-row"><div><div className="ink">{tr('Duyệt lệnh ngoài danh sách cho phép', 'Approve commands outside the allow-list')}</div><div className="hint">{tr('Ví dụ: cài package mới, gọi mạng.', 'For example installing a package or calling the network.')}</div></div><Switch defaultChecked aria-label={tr('Duyệt lệnh ngoài danh sách', 'Approve commands outside the allow-list')} /></div>
-        <div className="form-actions"><Button type="primary" onClick={() => message.success(tr('Đã lưu (prototype)', 'Saved (prototype)'))}>{tr('Lưu', 'Save')}</Button></div>
+        <div className="switch-row"><div><div className="ink">{tr('Duyệt trước khi merge', 'Approve before merge')}</div><div className="hint">{tr('Luôn bật: không agent nào được merge vào branch gốc.', 'Always on: no agent may merge into a base branch.')}</div></div><Switch defaultChecked disabled aria-label={tr('Duyệt trước khi merge', 'Approve before merge')} /></div>
+        <div className="switch-row"><div><div className="ink">{tr('Không tự duyệt job của mình', 'No approving your own job')}</div><div className="hint">{tr('Người tạo job cần một người khác duyệt. Nếu project không còn ai khác có quyền, người tạo vẫn được duyệt để job không bị kẹt.', 'A job’s creator needs someone else to approve it. If nobody else has access to the project, the creator may still approve so the job is not stuck.')}</div></div>
+          <Switch checked={rules.noSelfApprove} onChange={(v) => { setRules({ noSelfApprove: v }); saved(); }} aria-label={tr('Không tự duyệt job của mình', 'No approving your own job')} /></div>
+        <div className="switch-row"><div><div className="ink">{tr('Duyệt lệnh ngoài danh sách cho phép', 'Approve commands outside the allow-list')}</div><div className="hint">{tr('Ví dụ: cài package mới, gọi mạng.', 'For example installing a package or calling the network.')}</div></div><Switch defaultChecked onChange={saved} aria-label={tr('Duyệt lệnh ngoài danh sách', 'Approve commands outside the allow-list')} /></div>
       </div>
     </section>
   );

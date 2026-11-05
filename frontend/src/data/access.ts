@@ -7,23 +7,24 @@ import { tr } from '../i18n';
 
 export type Role = 'admin' | 'member';
 export interface Account { id: string; name: string; email: string; short: string; hue: number; role: Role; projects: string[]; active: boolean; lastSeen: string }
-interface State { accounts: Account[]; current: string }
+export interface Rules { noSelfApprove: boolean }
+interface State { accounts: Account[]; current: string; rules: Rules }
 
 const KEY = 'codesloop.access';
 const initial: State = {
   current: 'ma',
+  // On by default: a job's creator needs a second person to approve it, unless nobody else can.
+  rules: { noSelfApprove: true },
   accounts: [
     { id: 'ma', name: 'Nguyễn Minh Anh', email: 'minhanh@codes.tech', short: 'MA', hue: 190, role: 'admin', projects: [], active: true, lastSeen: '2026-11-05 14:18' },
-    { id: 'tq', name: 'Trần Quốc Huy', email: 'quochuy@codes.tech', short: 'QH', hue: 30, role: 'member', projects: ['qlkho', 'hddt'], active: true, lastSeen: '2026-11-05 14:12' },
+    { id: 'tq', name: 'Trần Quốc Huy', email: 'quochuy@codes.tech', short: 'QH', hue: 30, role: 'member', projects: ['qlkho'], active: true, lastSeen: '2026-11-05 14:12' },
     { id: 'lt', name: 'Lê Thu Trang', email: 'thutrang@codes.tech', short: 'TT', hue: 320, role: 'member', projects: ['web'], active: true, lastSeen: '2026-11-05 12:40' },
-    { id: 'pd', name: 'Phạm Văn Đức', email: 'vanduc@codes.tech', short: 'VĐ', hue: 110, role: 'member', projects: ['runtime', 'qlkho'], active: true, lastSeen: '2026-11-04 17:05' },
-    { id: 'hn', name: 'Hoàng Ngọc Hà', email: 'ngocha@codes.tech', short: 'NH', hue: 260, role: 'member', projects: [], active: false, lastSeen: '—' },
   ],
 };
 
 let state: State = (() => {
   let s = initial;
-  try { const raw = localStorage.getItem(KEY); if (raw) s = JSON.parse(raw) as State; } catch { /* use the sample */ }
+  try { const raw = localStorage.getItem(KEY); if (raw) { const saved = JSON.parse(raw) as State; s = { ...saved, rules: { ...initial.rules, ...saved.rules } }; } } catch { /* use the sample */ }
   // prototype only: ?as=lt opens the app as that account, without saving the choice
   const as = new URLSearchParams(location.search).get('as');
   return as && s.accounts.some((a) => a.id === as) ? { ...s, current: as } : s;
@@ -47,6 +48,21 @@ export const canSee = (a: Account | undefined, project: string) => projectsOf(a)
 export const canApprove = canSee;
 /** Everyone who can approve a project's jobs. */
 export const approversOf = (project: string) => state.accounts.filter((a) => canApprove(a, project));
+
+/**
+ * Whether this account may approve this job, and why not when it may not.
+ * With "no self-approval" on, the job's creator is blocked, unless nobody else has access to the project
+ * (a one-person project would otherwise never get approved).
+ */
+export function approvalCheck(a: Account | undefined, job: { project: string; by: string }): { ok: true } | { ok: false; reason: 'no-access' | 'own-job'; others: Account[] } {
+  if (!canApprove(a, job.project)) return { ok: false, reason: 'no-access', others: approversOf(job.project) };
+  const others = approversOf(job.project).filter((x) => x.id !== a!.id);
+  if (state.rules.noSelfApprove && job.by === a!.id && others.length) return { ok: false, reason: 'own-job', others };
+  return { ok: true };
+}
+/** Approvers for a job once the self-approval rule is applied. */
+export const jobApprovers = (job: { project: string; by: string }) => approversOf(job.project).filter((a) => approvalCheck(a, job).ok);
+export function setRules(rules: Partial<Rules>) { commit({ ...state, rules: { ...state.rules, ...rules } }); }
 
 export function currentAccount(s: State = state) { return s.accounts.find((a) => a.id === s.current) ?? s.accounts[0]; }
 export function switchAccount(id: string) { commit({ ...state, current: id }); }

@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { App, Button, Form, Input, Modal, Select } from 'antd';
 import { Link, useNavigate } from 'react-router-dom';
-import { jobs, NOW, people, projects, stepLabels } from '../data/sample';
+import { allJobs as jobs, NOW, people, projects, stepLabels } from '../data/sample';
 import { latest, workflows } from '../data/workflows';
 import { Icon } from '../components/Icon';
 import { isoDay } from '../lib/format';

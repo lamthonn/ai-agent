@@ -22,10 +22,11 @@ export const USD_PER_MTOK = 3.6;
 export const toTokens = (usd: number) => (usd / USD_PER_MTOK) * 1_000_000;
 export const toUsd = (tokens: number) => (tokens / 1_000_000) * USD_PER_MTOK;
 
-const KEY = 'codesloop.budget';
+// v2: the default moved to $1/day (Claude Pro, $20/month); a saved v1 config is not carried over
+const KEY = 'codesloop.budget.v2';
 export const defaultBudget: Budget = {
-  enabled: true, unit: 'usd', daily: 25, perJob: 4, warnAt: 0.8, action: 'queue',
-  projects: { qlkho: 12, hddt: null, web: null, runtime: 5 }, notify: 'minhanh@codes.tech',
+  enabled: true, unit: 'usd', daily: 1, perJob: 0.5, warnAt: 0.8, action: 'queue',
+  projects: { qlkho: null, web: null }, notify: 'minhanh@codes.tech',
 };
 
 let state: Budget = (() => {
