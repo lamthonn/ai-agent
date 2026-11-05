@@ -95,7 +95,7 @@ public static class WorkerApi
             var job = await db.Jobs.FindAsync(id);
             if (job is null) return Results.NotFound();
             if (JobStatus.IsFinal(job.Status)) return Results.Ok();   // e.g. cancelled while the last node ran: keep that
-            job.Status = r.Status; job.FailReason = r.Reason; job.EndedAt = DateTime.UtcNow; job.ResumeNode = null; job.ContextJson = null;
+            job.Status = r.Status; job.FailReason = r.Reason; job.EndedAt = DateTime.UtcNow; job.ResumeNode = null;   // the context stays: the finished job still shows its plan and diff
             await db.SaveChangesAsync();
             return Results.Ok();
         });

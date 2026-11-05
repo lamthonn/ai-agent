@@ -12,7 +12,7 @@ from . import workflow
 from .agents import from_claim
 from .api import Api
 from .executor import Handlers, run
-from .real import Job, handlers, prepare, publish, sh
+from .real import Job, diff, handlers, prepare, publish, sh
 from .workflow import Workflow
 
 
@@ -63,6 +63,8 @@ def process(claim: dict, api: Api, root: Path, make_handlers=handlers, open_pr: 
 
     if res.status == "paused":
         kind = "plan" if res.approval.id == "approve_plan" else "merge"
+        if kind == "merge":
+            step_ctx["diff"] = diff(job)[:60_000]    # what the person is about to approve
         api.approval(job.id, res.approval.id, kind, res.resume, step_ctx)
         api.event(job.id, f"Chờ duyệt: {res.approval.label}")
         return "approval"

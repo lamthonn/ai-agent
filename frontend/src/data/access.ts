@@ -62,16 +62,21 @@ export function approvalCheck(a: Account | undefined, job: { project: string; by
 }
 /** Approvers for a job once the self-approval rule is applied. */
 export const jobApprovers = (job: { project: string; by: string }) => approversOf(job.project).filter((a) => approvalCheck(a, job).ok);
-export function setRules(rules: Partial<Rules>) { commit({ ...state, rules: { ...state.rules, ...rules } }); }
+export function setRules(rules: Partial<Rules>) { const next = { ...state.rules, ...rules }; commit({ ...state, rules: next }); sink.rules?.(next); }
 
 export function currentAccount(s: State = state) { return s.accounts.find((a) => a.id === s.current) ?? s.accounts[0]; }
 export function switchAccount(id: string) { commit({ ...state, current: id }); }
-export function saveAccount(a: Account) {
+/** Saves on the server, which owns accounts; returns a temporary password when the account is new. */
+export async function saveAccount(a: Account): Promise<string | undefined> {
   const exists = state.accounts.some((x) => x.id === a.id);
   commit({ ...state, accounts: exists ? state.accounts.map((x) => (x.id === a.id ? a : x)) : [...state.accounts, a] });
+  return sink.account?.(a, !exists);
 }
-export function removeAccount(id: string) { commit({ ...state, accounts: state.accounts.filter((a) => a.id !== id) }); }
-export function resetAccess() { commit(initial); }
+export function removeAccount(id: string) { const a = state.accounts.find((x) => x.id === id); commit({ ...state, accounts: state.accounts.filter((x) => x.id !== id) }); if (a) void sink.account?.({ ...a, active: false }, false); }
+/** The backend plugs in here: what to call when a setting changes. */
+export const sink: { rules?: (r: Rules) => void; account?: (a: Account, isNew: boolean) => Promise<string | undefined> } = {};
+/** Replace the state with what the server says (no localStorage: the server is the source). */
+export function loadAccess(accounts: Account[], current: string, rules: Rules) { state = { accounts, current, rules }; listeners.forEach((l) => l()); }
 /** At least one active admin must remain, or nobody can grant access again. */
 export const activeAdmins = (accounts = state.accounts) => accounts.filter((a) => a.role === 'admin' && a.active).length;
 

@@ -7,7 +7,7 @@ Nền tảng AI Agent Engineering của Codes Tech: chạy AI coding agent (Clau
 
 ## Frontend (prototype giao diện)
 
-React 19 + Vite + TypeScript + Ant Design 6 + React Flow. Song ngữ Việt/Anh (`?lang=en`). Dữ liệu mẫu trong `frontend/src/data/` (`sample.ts`, `workflows.ts`, `budget.ts`), chưa nối backend.
+React 19 + Vite + TypeScript + Ant Design 6 + React Flow. Song ngữ Việt/Anh (`?lang=en`). Đã nối backend: đăng nhập, jobs, chờ duyệt, projects, agents, workflows, hạn mức, thành viên (`frontend/src/data/live.ts`). Tổng quan/Giám sát, Bug & test case và vài mục trong Cài đặt vẫn dữ liệu mẫu. Cần chạy backend trước (xem `backend/README.md`); `npm run dev` chuyển `/api` tới `http://localhost:5099` (đổi bằng biến `API_TARGET`).
 
 ```bash
 cd frontend

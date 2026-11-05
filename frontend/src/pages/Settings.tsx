@@ -4,7 +4,7 @@ import { App, Button, Form, Input, InputNumber, Modal, Popconfirm, Radio, Segmen
 import { useNavigate, useParams } from 'react-router-dom';
 import { projects } from '../data/sample';
 import { budgetState, convertUnit, defaultBudget, fmtAmount, fmtOther, saveBudget, usedToday, useBudget, type Budget } from '../data/budget';
-import { activeAdmins, isAdmin, projectsOf, removeAccount, resetAccess, saveAccount, setRules, useAccess, useMe, type Account } from '../data/access';
+import { activeAdmins, isAdmin, projectsOf, removeAccount, saveAccount, setRules, useAccess, useMe, type Account } from '../data/access';
 import { Avatar } from '../components/StatusPill';
 import { pct } from '../lib/format';
 import { useTitle } from '../lib/useTitle';
@@ -56,8 +56,11 @@ function MembersSettings() {
     const initials = v.name.trim().split(/\s+/).slice(-2).map((w: string) => w[0]).join('').toUpperCase();
     const next: Account = { ...editing!, ...v, id: editing!.id || v.email.split('@')[0], short: editing!.short || initials, hue: editing!.hue || Math.floor(Math.random() * 360), projects: v.role === 'admin' ? [] : v.projects ?? [] };
     if (activeAdmins(accounts.map((a) => (a.id === next.id ? next : a))) === 0) { message.error(tr('Phải còn ít nhất một admin đang hoạt động.', 'At least one active admin must remain.')); return; }
-    saveAccount(next); setEditing(null);
-    message.success(isNew ? tr(`Đã mời ${next.email} (prototype, chưa gửi email)`, `Invited ${next.email} (prototype, no email sent)`) : tr(`Đã cập nhật ${next.name}`, `Updated ${next.name}`));
+    setEditing(null);
+    void saveAccount(next).then((pw) => {
+      if (isNew && pw) Modal.info({ title: tr(`Đã tạo tài khoản ${next.email}`, `Created ${next.email}`), content: <p>{tr('Mật khẩu tạm (chỉ hiện một lần, hãy gửi cho người đó):', 'Temporary password (shown once; send it to them):')} <code>{pw}</code></p> });
+      else if (!isNew) message.success(tr(`Đã cập nhật ${next.name}`, `Updated ${next.name}`));
+    });
   });
 
   const projectName = Object.fromEntries(projects.map((p) => [p.id, p.name]));
@@ -79,7 +82,7 @@ function MembersSettings() {
               {a.id !== me.id && <Popconfirm title={tr(`Xóa ${a.name}?`, `Remove ${a.name}?`)} description={tr('Job và lịch sử duyệt của người này được giữ lại.', 'Their jobs and approval history are kept.')} okText={tr('Xóa', 'Remove')} cancelText={tr('Không', 'No')} onConfirm={() => { removeAccount(a.id); message.success(tr('Đã xóa', 'Removed')); }}><Button size="small" danger>{tr('Xóa', 'Remove')}</Button></Popconfirm>}
             </span> },
           ]} />
-          <div className="form-actions"><Button onClick={() => { resetAccess(); message.info(tr('Đã khôi phục dữ liệu mẫu', 'Sample data restored')); }}>{tr('Khôi phục mẫu', 'Restore sample')}</Button><Button type="primary" onClick={() => open(null)}>{tr('Mời thành viên', 'Invite member')}</Button></div>
+          <div className="form-actions"><Button type="primary" onClick={() => open(null)}>{tr('Mời thành viên', 'Invite member')}</Button></div>
         </div>
       </section>
 

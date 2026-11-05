@@ -20,6 +20,21 @@ public record AccountRequest(string? Name, string? Email, string? Password, bool
 
 public static class UserApi
 {
+    /// <summary>What a person needs to decide an approval: the agents' texts, the review verdict and the diff. Never the loop counters.</summary>
+    static JsonObject? EvidenceOf(string? json)
+    {
+        if (json is null) return null;
+        var o = new JsonObject();
+        foreach (var (k, v) in JsonNode.Parse(json)!.AsObject())
+        {
+            if (k.StartsWith('_')) continue;
+            if (v is JsonObject { } obj && obj["text"] is { } text) o[k] = JsonNode.Parse(new JsonObject { ["text"] = text.DeepClone(), ["verdict"] = obj["verdict"]?.DeepClone() }.ToJsonString());
+            else if (k is "diff" or "exit_code") o[k] = v?.DeepClone();
+        }
+        if (JsonNode.Parse(json)!["review"] is JsonObject r) o["review"] = r.DeepClone();
+        return o;
+    }
+
     public static void Map(WebApplication app)
     {
         app.MapPost("/api/auth/login", async (LoginRequest r, AppDb db, IConfiguration cfg) =>
@@ -53,8 +68,10 @@ public static class UserApi
             if (await db.CurrentAsync(u) is not { } a) return Results.Unauthorized();
             var ids = await db.ProjectIdsAsync(a);
             var jobs = await db.Jobs.Include(j => j.Steps).Where(j => ids.Contains(j.ProjectId)).OrderByDescending(j => j.CreatedAt).ToListAsync();
-            return Results.Ok(jobs.Select(j => new { j.Id, j.Title, j.ProjectId, j.WorkflowId, j.WorkflowVersion, j.CreatedById, j.Status, j.Branch, j.CreatedAt, j.StartedAt, j.EndedAt,
-                tokens = j.Steps.Sum(s => s.Tokens), cost = j.Steps.Sum(s => s.Cost) }));
+            var names = await db.Accounts.ToDictionaryAsync(x => x.Id, x => x.Name);
+            return Results.Ok(jobs.Select(j => new { j.Id, j.Title, j.ProjectId, j.WorkflowId, j.WorkflowVersion, j.CreatedById, createdByName = names.GetValueOrDefault(j.CreatedById, j.CreatedById), j.Status, j.FailReason, j.Branch, j.CreatedAt, j.StartedAt, j.EndedAt,
+                tokens = j.Steps.Sum(s => s.Tokens), cost = j.Steps.Sum(s => s.Cost),
+                steps = j.Steps.OrderBy(s => s.Id).Select(s => new { s.NodeId, s.Outcome, s.Tokens, s.Note, s.At }) }));
         });
 
         api.MapGet("/jobs/{id}", async (string id, AppDb db, ClaimsPrincipal u) =>
@@ -64,7 +81,7 @@ public static class UserApi
             if (j is null || !await db.CanSeeAsync(a, j.ProjectId)) return Results.NotFound();   // not 403: do not reveal it exists
             var approvals = await db.Approvals.Where(x => x.JobId == id).OrderBy(x => x.Id).ToListAsync();
             return Results.Ok(new { j.Id, j.Title, j.ProjectId, j.WorkflowId, j.WorkflowVersion, j.CreatedById, j.Status, j.Requirement, j.Branch, j.FailReason,
-                j.CreatedAt, j.StartedAt, j.EndedAt, steps = j.Steps.OrderBy(s => s.Id), approvals });
+                j.CreatedAt, j.StartedAt, j.EndedAt, steps = j.Steps.OrderBy(s => s.Id), approvals, context = EvidenceOf(j.ContextJson) });
         });
 
         api.MapGet("/jobs/{id}/events", async (string id, long? after, AppDb db, ClaimsPrincipal u) =>
@@ -148,7 +165,8 @@ public static class UserApi
         api.MapGet("/workflows", async (AppDb db) =>
         {
             var wfs = await db.Workflows.Include(w => w.Versions).ToListAsync();
-            return Results.Ok(wfs.Select(w => new { w.Id, w.NameVi, w.NameEn, latest = w.Versions.Max(v => v.Version), versions = w.Versions.OrderBy(v => v.Version).Select(v => new { v.Version, v.Note, v.CreatedById, v.CreatedAt }) }));
+            var names = await db.Accounts.ToDictionaryAsync(x => x.Id, x => x.Name);
+            return Results.Ok(wfs.Select(w => new { w.Id, w.NameVi, w.NameEn, latest = w.Versions.Max(v => v.Version), versions = w.Versions.OrderBy(v => v.Version).Select(v => new { v.Version, v.Note, v.CreatedById, createdByName = names.GetValueOrDefault(v.CreatedById, v.CreatedById), v.CreatedAt }) }));
         });
 
         api.MapGet("/workflows/{id}/versions/{version:int}", async (string id, int version, AppDb db) =>

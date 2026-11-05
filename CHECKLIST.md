@@ -22,14 +22,14 @@
 
 ## B. Frontend còn thiếu
 
-- [ ] B1. Gọi API thật thay `src/data/sample.ts`
+- [x] B1. Gọi API thật: đăng nhập, projects, jobs (tạo, xem, hủy), chờ duyệt (duyệt, từ chối), agents, workflows (chỉ xem), hạn mức, quy tắc duyệt, thành viên. Còn dữ liệu mẫu: Tổng quan/Giám sát (sandbox), Bug & test case, lưu workflow ở builder, Claude API/Sandbox trong Cài đặt
 - [ ] B3. Log realtime qua SignalR
-- [ ] B4. Trạng thái loading / lỗi khi gọi API
+- [x] B4. Loading lần đầu, báo lỗi khi gọi API; còn thiếu skeleton từng bảng
 - [ ] B5. Builder: lưu phiên bản thật, chạy thử, tô trạng thái node khi job chạy
 - [ ] B6. Tìm kiếm toàn cục (ô trên top bar)
 - [ ] B7. Tách bundle (hiện ~1,4 MB)
 - [ ] B8. Test E2E bằng Playwright
-- [ ] B10. Đăng nhập thật (SSO / email) thay nút đổi người dùng của prototype
+- [x] B10. Đăng nhập email + mật khẩu (JWT) thay nút đổi người dùng; SSO chưa có
 - [ ] B9. Dịch nội dung do người dùng nhập (tên node, log, kế hoạch) — hiện giữ nguyên tiếng Việt
 
 ## C. Backend & runtime (kế hoạch chi tiết: [docs/BACKEND-PLAN.md](docs/BACKEND-PLAN.md))

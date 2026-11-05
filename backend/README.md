@@ -12,6 +12,13 @@ dotnet test
 
 Tài khoản mẫu (Development): `minhanh@codes.tech` (admin), `quochuy@codes.tech` (QLKho), `thutrang@codes.tech` (CongThongTin-Web).
 
+Giao diện (cần backend đang chạy ở cổng 5099):
+
+```
+cd frontend
+npm run dev        # http://localhost:5173, đăng nhập bằng tài khoản mẫu ở trên
+```
+
 Worker (một process, cùng máy hoặc máy khác):
 
 ```

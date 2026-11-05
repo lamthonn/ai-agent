@@ -4,7 +4,8 @@ import { Dropdown, Segmented } from 'antd';
 import { Icon } from './Icon';
 import { Avatar } from './StatusPill';
 import { approvals, jobById, jobs, NOW } from '../data/sample';
-import { approvalCheck, canSee, isAdmin, projectsOf, switchAccount, useAccess, useMe } from '../data/access';
+import { canSee, isAdmin, projectsOf, useMe } from '../data/access';
+import { signOut, useLive } from '../data/live';
 import { setLang, tr, useLang, type Lang } from '../i18n';
 
 export const PRODUCT = 'Codes Loop';
@@ -18,18 +19,17 @@ export function Shell({ children }: { children: ReactNode }) {
   useEffect(() => setOpen(false), [loc.pathname]);
 
   const me = useMe();
-  const { accounts } = useAccess();
+  useLive();
   // counts follow what this account can see
-  const pending = approvals.filter((a) => a.status === 'pending' && approvalCheck(me, jobById[a.job]).ok).length; // only what this account can act on
+  const pending = approvals.filter((a) => a.status === 'pending' && a.canApprove && jobById[a.job]).length; // only what this account can act on
   const today = new Date(NOW.getFullYear(), NOW.getMonth(), NOW.getDate());
   const failedToday = jobs.filter((j) => j.status === 'failed' && j.start >= today && canSee(me, j.project)).length;
   const roleText = isAdmin(me) ? 'Admin' : tr(`Thành viên · ${projectsOf(me).length} project`, `Member · ${projectsOf(me).length} projects`);
   const switcher = {
     items: [
-      { key: 'h', type: 'group' as const, label: tr('Đăng nhập với tư cách (prototype)', 'Sign in as (prototype)'),
-        children: accounts.filter((a) => a.active).map((a) => ({ key: a.id, label: `${a.name} · ${a.role === 'admin' ? 'Admin' : tr('Thành viên', 'Member')}` })) },
+      { key: 'who', type: 'group' as const, label: `${me.name} · ${me.email}`, children: [{ key: 'out', label: tr('Đăng xuất', 'Sign out') }] },
     ],
-    selectable: true, selectedKeys: [me.id], onClick: ({ key }: { key: string }) => switchAccount(key),
+    onClick: ({ key }: { key: string }) => { if (key === 'out') signOut(); },
   };
 
   const nav = [
@@ -83,7 +83,7 @@ export function Shell({ children }: { children: ReactNode }) {
             <Segmented size="small" value={lang} onChange={(v) => setLang(v as Lang)} options={[{ label: 'VI', value: 'vi' }, { label: 'EN', value: 'en' }]} aria-label={tr('Ngôn ngữ', 'Language')} />
             <button className="btn ghost help" aria-label={tr('Trợ giúp', 'Help')}><Icon name="help" /></button>
             <Dropdown menu={switcher} trigger={['click']} placement="bottomRight">
-              <button className="avatar-btn" aria-label={tr(`Tài khoản: ${me.name}. Đổi tài khoản`, `Account: ${me.name}. Switch account`)}><Avatar {...me} /></button>
+              <button className="avatar-btn" aria-label={tr(`Tài khoản: ${me.name}. Đăng xuất`, `Account: ${me.name}. Sign out`)}><Avatar {...me} /></button>
             </Dropdown>
           </div>
         </header>

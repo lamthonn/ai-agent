@@ -33,18 +33,21 @@ let state: Budget = (() => {
   try { const s = localStorage.getItem(KEY); return s ? { ...defaultBudget, ...JSON.parse(s) } : defaultBudget; } catch { return defaultBudget; }
 })();
 const listeners = new Set<() => void>();
+export const budgetSink: { save?: (b: Budget) => void } = {};
 export function saveBudget(next: Budget) {
   state = next;
   try { localStorage.setItem(KEY, JSON.stringify(next)); } catch { /* keep for this session */ }
   listeners.forEach((l) => l());
+  budgetSink.save?.(next);
 }
+/** What the server holds replaces the local copy. */
+export function loadBudget(next: Budget) { state = next; listeners.forEach((l) => l()); }
 export function useBudget() {
   return useSyncExternalStore((cb) => { listeners.add(cb); return () => listeners.delete(cb); }, () => state, () => state);
 }
 
-const today = new Date(NOW.getFullYear(), NOW.getMonth(), NOW.getDate());
 const round2 = (v: number) => Math.round(v * 100) / 100;
-const todays = (project?: string) => jobs.filter((j) => j.start >= today && (!project || j.project === project));
+const todays = (project?: string) => { const today = new Date(NOW.getFullYear(), NOW.getMonth(), NOW.getDate()); return jobs.filter((j) => j.start >= today && (!project || j.project === project)); };
 /** Spend so far today in USD. */
 export const spentToday = (project?: string) => round2(todays(project).reduce((a, j) => a + j.cost, 0));
 /** Tokens used so far today. */

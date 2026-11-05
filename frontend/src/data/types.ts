@@ -22,4 +22,4 @@ export interface Job {
   approval?: 'plan' | 'merge'; waitingSince?: Date; note?: Text;
 }
 export interface Worker { id: string; image: string; state: 'busy' | 'idle' | 'maintenance'; job: string | null; cpu: number; mem: number; memMax: number; note?: Text }
-export interface Approval { id: string; job: string; kind: 'plan' | 'merge'; requested: Date; status: 'pending' | 'approved' | 'rejected'; by?: string; decided?: Date }
+export interface Approval { id: string; job: string; kind: 'plan' | 'merge'; requested: Date; status: 'pending' | 'approved' | 'rejected'; by?: string; decided?: Date; canApprove?: boolean }
