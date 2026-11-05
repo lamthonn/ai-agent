@@ -1,22 +1,24 @@
-import type { JobStatus } from '../data/types';
+import { Link } from 'react-router-dom';
+import type { Job, JobStatus } from '../data/types';
+import { workflowById } from '../data/workflows';
+import { tr, tx } from '../i18n';
 
-const map: Record<JobStatus, { text: string; tone: string }> = {
-  queued: { text: 'Hàng đợi', tone: '' },
-  running: { text: 'Đang chạy', tone: 'run' },
-  approval: { text: 'Chờ duyệt', tone: 'warn' },
-  succeeded: { text: 'Thành công', tone: 'pos' },
-  failed: { text: 'Lỗi', tone: 'neg' },
-  cancelled: { text: 'Đã hủy', tone: '' },
-};
+const tone: Record<JobStatus, string> = { queued: '', running: 'run', approval: 'warn', succeeded: 'pos', failed: 'neg', cancelled: '' };
+export const statusText = (s: JobStatus) => ({
+  queued: tr('Hàng đợi', 'Queued'), running: tr('Đang chạy', 'Running'), approval: tr('Chờ duyệt', 'Awaiting approval'),
+  succeeded: tr('Thành công', 'Succeeded'), failed: tr('Lỗi', 'Failed'), cancelled: tr('Đã hủy', 'Cancelled'),
+})[s];
 
 export function StatusPill({ status }: { status: JobStatus }) {
-  const m = map[status];
-  return <span className={`pill ${m.tone}`}>{m.text}</span>;
+  return <span className={`pill ${tone[status]}`}>{statusText(status)}</span>;
 }
-
-export const statusText = (s: JobStatus) => map[s].text;
 
 /** A person's initials on a pale tint of their own hue. Identity, not data. */
 export function Avatar({ short, hue, name }: { short: string; hue: number; name: string }) {
   return <span className="avatar" style={{ background: `hsl(${hue} 55% 92%)`, color: `hsl(${hue} 45% 28%)` }} title={name} aria-label={name}>{short}</span>;
+}
+
+/** The workflow and version a job ran with, linking to that exact version. */
+export function WorkflowRef({ job }: { job: Job }) {
+  return <Link to={`/workflows/${job.workflowId}?v=${job.workflowVersion}`}>{tx(workflowById[job.workflowId].name)} v{job.workflowVersion}</Link>;
 }

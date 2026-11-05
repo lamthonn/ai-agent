@@ -1,7 +1,8 @@
 // Detail content for the jobs the screens open most: log, diff, test results, plan.
 // Other jobs get a short generated log from their trace.
 import type { Job } from './types';
-import { projectById, steps } from './sample';
+import { projectById, stepLabels } from './sample';
+import { tr, tx } from '../i18n';
 
 export interface LogLine { t: string; node: string; level: 'info' | 'warn' | 'error'; msg: string }
 export interface TestResult { total: number; passed: number; failed: { name: string; file: string; message: string }[]; skipped: number; duration: string }
@@ -49,7 +50,7 @@ const diff148 = `diff --git a/src/QLKho.Application/Inventory/InventoryLotServic
      }`;
 
 const tests148: TestResult = {
-  total: 212, passed: 210, skipped: 0, duration: '1 phút 26 giây',
+  total: 212, passed: 210, skipped: 0, get duration() { return tr('1 phút 26 giây', '1 min 26 s'); },
   failed: [
     { name: 'InventoryLotTests.Sync_MergesLotsWithSameCode_KeepsEarliestExpiry', file: 'tests/QLKho.Tests/Inventory/InventoryLotTests.cs:88', message: 'Expected NgayHetHan 2026-12-01 but found 2027-02-15' },
     { name: 'InventoryLotTests.Sync_ExpiredLot_IsExcludedFromAvailable', file: 'tests/QLKho.Tests/Inventory/InventoryLotTests.cs:121', message: 'Expected SoLuongKhaDung 40 but found 55' },
@@ -81,7 +82,7 @@ const plan150: Plan = {
   questions: ['Link tải nên hết hạn sau 24 giờ hay 7 ngày?'],
 };
 
-const tests149: TestResult = { total: 148, passed: 148, skipped: 0, duration: '42 giây', failed: [] };
+const tests149: TestResult = { total: 148, passed: 148, skipped: 0, get duration() { return tr('42 giây', '42 s'); }, failed: [] };
 const diffStat149 = [
   { path: 'src/pages/TraCuuHoaDon/TraCuuHoaDon.tsx', add: 64, del: 31 },
   { path: 'src/api/invoices.ts', add: 22, del: 6 },
@@ -104,8 +105,8 @@ function genericLog(job: Job): LogLine[] {
   const fmt = (ms: number) => new Date(ms).toTimeString().slice(0, 8);
   for (const s of job.trace) {
     if (s.state === 'pending' || s.state === 'skipped') continue;
-    const label = steps.find((x) => x.id === s.step)!.label;
-    const msg = s.state === 'waiting' ? `${label}: đang chờ người duyệt` : s.state === 'running' ? `${label}: đang chạy (${s.min} phút)` : `${label}: xong sau ${s.min} phút${s.rounds ? `, ${s.rounds} vòng` : ''}`;
+    const label = tx(stepLabels[s.step]);
+    const msg = s.state === 'waiting' ? tr(`${label}: đang chờ người duyệt`, `${label}: waiting for approval`) : s.state === 'running' ? tr(`${label}: đang chạy (${s.min} phút)`, `${label}: running (${s.min} min)`) : tr(`${label}: xong sau ${s.min} phút${s.rounds ? `, ${s.rounds} vòng` : ''}`, `${label}: done in ${s.min} min${s.rounds ? `, ${s.rounds} rounds` : ''}`);
     out.push({ t: fmt(t), node: s.step, level: s.state === 'failed' ? 'error' : 'info', msg });
     t += s.min * 60_000;
   }

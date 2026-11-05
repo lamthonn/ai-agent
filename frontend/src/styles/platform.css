@@ -1,19 +1,22 @@
-/* Agent Platform — framed-sheet style (taste-skill app sheet, seed 1821421201), on top of app.css.
-   Face: IBM Plex Mono for IDs, branches and commands (one job). Signature element: the run trace. */
+/* Codes Loop — framed-sheet style (taste-skill app sheet, seed 1821421201) with the Codes Tech brand kept
+   (--keep palette,type). Face: the brand navy frame and blue data; IBM Plex Mono for IDs only. Signature: the run trace. */
 :root {
-  --ground: #f9fbfc; --surface: #ffffff; --raised: #f4f6f8; --active: #ebedee;
-  --border: #e8eaec; --rule: #f0f1f2; --control: #cdced1;
-  --text: #131416; --muted: #5d5f60; --faint: #646668;
-  --accent: #1b6c80; --primary: #1d1f20; --primary-ink: #ffffff;
+  /* Codes Tech brand on the framed-sheet app style: Deep Space Navy ink and primary, Royal Ocean Blue on data,
+     links and focus; the frame tinted one low-chroma step of the navy. Brand gradients stay in the logo only. */
+  --ground: #f5f8fc; --surface: #ffffff; --raised: #f3f6fa; --active: #e8eef6;
+  --border: #e2e8f0; --rule: #eef2f6; --control: #cbd3df;
+  --text: #0B2545; --muted: #526077; --faint: #5f6b80;
+  --accent: #0066FF; --primary: #0B2545; --primary-ink: #ffffff;
   --positive: #1e7b4f; --negative: #c4242a; --warning: #92400e;
-  --chart-1: #1b6c80; --chart-2: #2f70bb; --chart-3: #a86f0c; --chart-muted: #cfd3d6;
-  --pill-neutral-bg: #ebedee; --pill-neutral-ink: #353736;
-  --pill-run-bg: #e3f0f3; --pill-run-ink: #0f4654;
+  --chart-1: #0066FF; --chart-2: #00A3FF; --chart-3: #a86f0c; --chart-muted: #c9d3e0;
+  --pill-neutral-bg: #e8eef6; --pill-neutral-ink: #26364d;
+  --pill-run-bg: #e5efff; --pill-run-ink: #0047b3;
   --wait: #a86f0c;
   --radius-card: 8px; --radius-control: 6px; --radius-sheet: 16px; --sheet-inset: 8px;
   --row-height: 48px; --sidebar-width: 228px; --gap: 24px; --pad: 24px; --card-pad: 20px; --control-height: 32px;
   --fs-title: 22px; --fs-section: 16px; --fs-kpi: 28px; --fs-body: 14px; --fs-small: 12px;
-  --font: "IBM Plex Sans", Inter, system-ui, sans-serif;
+  --font: Inter, system-ui, sans-serif;
+  --brand-font: "Plus Jakarta Sans", Inter, sans-serif; /* the wordmark only */
   --mono: "IBM Plex Mono", ui-monospace, Consolas, monospace;
 }
 
@@ -21,7 +24,8 @@
 .app.frame { background: var(--ground); }
 .sidebar { padding: 14px 12px 12px; gap: 2px; }
 .brand { display: flex; align-items: center; gap: 10px; padding: 4px 8px 16px; }
-.brand-name { font-weight: 600; line-height: 18px; }
+.brand-name { font: 700 15px/18px var(--brand-font); letter-spacing: -0.01em; }
+.brand img { flex: none; border-radius: 6px; }
 .brand-scope { font-size: var(--fs-small); color: var(--muted); line-height: 16px; }
 .menu-close { display: none; margin-left: auto; }
 .nav { display: grid; gap: 2px; }
@@ -68,6 +72,7 @@
 .nowrap { white-space: nowrap; }
 .grow { flex: 1; min-width: 0; }
 .mono, code, kbd { font-family: var(--mono); font-size: 13px; }
+code { white-space: nowrap; }
 code { padding: 1px 5px; border-radius: 4px; background: var(--raised); }
 a.mono, a .mono { color: var(--accent); }
 .pos-ink { color: var(--positive); } .neg-ink { color: var(--negative); font-weight: 500; }
@@ -241,3 +246,53 @@ tr.total td { font-weight: 500; border-top: 1px solid var(--border); }
 .wf-node .react-flow__handle { opacity: 0; transition: opacity var(--t-hover) ease; }
 .wf-node:hover .react-flow__handle, .wf-node.selected .react-flow__handle, .react-flow__node.connectable:focus-within .react-flow__handle { opacity: 1; }
 a.mono, .line1 .mono, td .mono { white-space: nowrap; }
+
+/* ---------- overview: stacked side column, budget meter ---------- */
+.stack { display: grid; gap: var(--gap); align-content: start; min-width: 0; }
+.budget-figure { margin: 2px 0 10px; }
+.budget-figure .big { font-size: 24px; font-weight: 500; color: var(--text); }
+.meter { position: relative; height: 8px; border-radius: 999px; background: var(--active); }
+.meter > span { display: block; height: 100%; border-radius: 999px; background: var(--accent); }
+.meter.warn > span { background: var(--wait); } .meter.over > span { background: var(--negative); }
+.meter > i { position: absolute; top: -3px; width: 2px; height: 14px; background: var(--text); border-radius: 1px; transform: translateX(-1px); }
+.meter-scale { display: flex; justify-content: space-between; margin-top: 6px; font-size: 12px; color: var(--muted); }
+.trace-named .trace-row .name { display: block; }
+.warn-ink { color: var(--warning); font-weight: 500; }
+
+/* ---------- workflows list ---------- */
+.flow-list { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--gap); }
+.flow-card { display: grid; grid-template-columns: minmax(0, 1fr) 460px auto; gap: 32px; align-items: start; }
+.flow-main h2 { font-size: 18px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+.flow-main h2 a { color: var(--text); }
+.flow-main h2 a:hover { color: var(--accent); }
+.flow-main > p { margin-top: 4px; }
+.flow-steps { list-style: none; margin: 14px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px 4px; font-size: 13px; }
+.flow-steps li { display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; border-radius: 4px; background: var(--raised); color: var(--text); }
+.flow-steps li + li::before { content: "›"; color: var(--muted); margin: 0 4px 0 -2px; }
+.flow-facts { display: grid; grid-template-columns: 1.3fr 1fr 1fr; gap: 16px; margin: 0; }
+.plain-list { list-style: none; margin: 0; padding: 0; }
+.budget-project { margin-top: 10px; font-size: 13px; }
+.flow-facts dt { color: var(--muted); font-size: 12px; }
+.flow-facts dd { margin: 4px 0 0; }
+.flow-actions { align-self: center; }
+.flow-desc { margin: -8px 0 16px; }
+.version-note { margin: -12px 0 16px; color: var(--muted); }
+.readonly-note { margin-bottom: 16px; }
+.builder.is-readonly .canvas-wrap { background: #eef2f7; }
+.props-fields { border: 0; margin: 0; padding: 0; min-width: 0; display: grid; gap: 16px; }
+.used-in { margin: -6px 0 16px; }
+
+/* ---------- settings: budget ---------- */
+.set-summary { margin-top: 20px; padding: 14px 16px; border-radius: 12px; background: var(--raised); }
+.radio-stack { display: grid; gap: 8px; }
+table.plain th { border-bottom: 1px solid var(--border); }
+table.plain td { padding-top: 8px; padding-bottom: 8px; vertical-align: middle; }
+.preview { border: 1px solid var(--border); border-radius: 10px; background: var(--surface); padding: 12px 14px; display: grid; gap: 4px; }
+.preview-h { font-size: 12px; color: var(--muted); }
+.save-bar { display: flex; align-items: center; gap: 8px; padding: 20px 0 4px; border-top: 1px solid var(--border); }
+.save-bar .spacer { flex: 1; }
+.budget-alert { margin-top: 4px; }
+.topbar-right .ant-segmented { font-weight: 500; }
+@media (max-width: 1180px) { .flow-card { grid-template-columns: minmax(0, 1fr); gap: 16px; } .flow-actions { align-self: start; } }
+@media (max-width: 860px) { .flow-facts { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } .save-bar { flex-wrap: wrap; } }
+@media (max-width: 860px) { .topbar-right .help { display: none; } }

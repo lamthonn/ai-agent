@@ -5,15 +5,17 @@ import { Overview } from './pages/Overview';
 import { Jobs } from './pages/Jobs';
 import { JobDetail } from './pages/JobDetail';
 import { Approvals } from './pages/Approvals';
+import { Workflows } from './pages/Workflows';
 import { WorkflowBuilder } from './pages/WorkflowBuilder';
 import { Agents } from './pages/Agents';
 import { Projects } from './pages/Projects';
 import { Monitoring } from './pages/Monitoring';
 import { Settings } from './pages/Settings';
+import { tr } from './i18n';
 
 export function App() {
   const loc = useLocation();
-  useEffect(() => { document.querySelector('.sheet')?.scrollTo?.(0, 0); window.scrollTo(0, 0); }, [loc.pathname]);
+  useEffect(() => { window.scrollTo(0, 0); }, [loc.pathname]);
   return (
     <Shell>
       <Routes>
@@ -22,13 +24,15 @@ export function App() {
         <Route path="/jobs/:id" element={<JobDetail />} />
         <Route path="/approvals" element={<Approvals />} />
         <Route path="/approvals/:id" element={<Approvals />} />
-        <Route path="/workflows" element={<WorkflowBuilder />} />
+        <Route path="/workflows" element={<Workflows />} />
+        <Route path="/workflows/:id" element={<WorkflowBuilder />} />
         <Route path="/agents" element={<Agents />} />
         <Route path="/agents/:id" element={<Agents />} />
         <Route path="/projects" element={<Projects />} />
         <Route path="/monitoring" element={<Monitoring />} />
         <Route path="/settings" element={<Settings />} />
-        <Route path="*" element={<div className="title-row"><h1>Không tìm thấy trang</h1></div>} />
+        <Route path="/settings/:section" element={<Settings />} />
+        <Route path="*" element={<div className="title-row"><h1>{tr('Không tìm thấy trang', 'Page not found')}</h1></div>} />
       </Routes>
     </Shell>
   );

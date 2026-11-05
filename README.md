@@ -1,13 +1,13 @@
-# AI Agent Engineering Platform
+# Codes Loop
 
-Nền tảng chạy AI coding agent (Claude) trên repository theo workflow: phân tích → kế hoạch → duyệt → code → build & test → sửa lỗi → review → duyệt merge.
+Nền tảng AI Agent Engineering của Codes Tech: chạy AI coding agent (Claude) trên repository theo workflow: phân tích → kế hoạch → duyệt → code → build & test → sửa lỗi → review → duyệt merge.
 
 - Kiến trúc và roadmap: [ai-agent-platform-roadmap.md](ai-agent-platform-roadmap.md)
 - Việc cần làm: [CHECKLIST.md](CHECKLIST.md)
 
 ## Frontend (prototype giao diện)
 
-React 19 + Vite + TypeScript + Ant Design 6 + React Flow. Dữ liệu mẫu nằm trong `frontend/src/data/sample.ts`, chưa nối backend.
+React 19 + Vite + TypeScript + Ant Design 6 + React Flow. Song ngữ Việt/Anh (`?lang=en`). Dữ liệu mẫu trong `frontend/src/data/` (`sample.ts`, `workflows.ts`, `budget.ts`), chưa nối backend.
 
 ```bash
 cd frontend
@@ -23,8 +23,11 @@ Cần Node 20.19+ (khuyến nghị Node 22 hoặc 24).
 | Tổng quan | `#/` |
 | Jobs / chi tiết job | `#/jobs`, `#/jobs/JOB-0148` |
 | Chờ duyệt | `#/approvals` |
-| Workflow Builder | `#/workflows` |
-| Agents · Projects · Giám sát · Cài đặt | `#/agents`, `#/projects`, `#/monitoring`, `#/settings` |
+| Workflows / Builder | `#/workflows`, `#/workflows/ai-coding?v=2` |
+| Agents · Projects · Giám sát | `#/agents`, `#/projects`, `#/monitoring` |
+| Cài đặt (hạn mức chi phí) | `#/settings/budget` |
+
+Logo và màu lấy từ bộ nhận diện Codes Tech (`codes-tech-brand-assets.zip`), favicon trong `frontend/public/brand/`.
 
 ## Công cụ cho Claude Code trong repo
 
