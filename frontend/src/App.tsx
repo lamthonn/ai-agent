@@ -10,6 +10,7 @@ import { WorkflowBuilder } from './pages/WorkflowBuilder';
 import { Agents } from './pages/Agents';
 import { Projects } from './pages/Projects';
 import { Monitoring } from './pages/Monitoring';
+import { Sources } from './pages/Sources';
 import { Settings } from './pages/Settings';
 import { tr } from './i18n';
 
@@ -29,6 +30,8 @@ export function App() {
         <Route path="/agents" element={<Agents />} />
         <Route path="/agents/:id" element={<Agents />} />
         <Route path="/projects" element={<Projects />} />
+        <Route path="/sources" element={<Sources />} />
+        <Route path="/sources/:tab" element={<Sources />} />
         <Route path="/monitoring" element={<Monitoring />} />
         <Route path="/settings" element={<Settings />} />
         <Route path="/settings/:section" element={<Settings />} />

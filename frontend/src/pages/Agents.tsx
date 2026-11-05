@@ -10,7 +10,7 @@ import { tr, tx } from '../i18n';
 
 const permText = (p: Agent['perm']) => ({ read: tr('Chỉ đọc', 'Read only'), write: tr('Đọc/ghi', 'Read/write'), test: tr('Đọc, chạy lệnh test', 'Read, run tests') })[p];
 const allTools = ['Read', 'Grep', 'Glob', 'Edit', 'Write', 'Bash'];
-const stepFor: Record<string, string> = { 'requirement-analyzer': 'analyze', architect: 'plan', coder: 'code', tester: 'build_test', fixer: 'fix', 'code-reviewer': 'review' };
+const stepFor: Record<string, string> = { 'requirement-analyzer': 'analyze', architect: 'plan', coder: 'code', tester: 'build_test', fixer: 'fix', 'code-reviewer': 'review', 'test-runner': 'run_cases' };
 
 export function Agents() {
   useTitle('Agents');

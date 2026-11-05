@@ -7,6 +7,7 @@ import { jobs, projectById, projects, people } from '../data/sample';
 import { latest, workflowById, workflows } from '../data/workflows';
 import { budgetState, fmtAmount, usedToday, useBudget } from '../data/budget';
 import { canSee, isAdmin, useMe } from '../data/access';
+import { caseRows, sources } from '../data/sources';
 import type { Job, JobStatus } from '../data/types';
 import { StatusPill, WorkflowRef } from '../components/StatusPill';
 import { currentStep, RunTrace } from '../components/RunTrace';
@@ -65,12 +66,12 @@ export function Jobs() {
       <Table<Job> rowKey="id" columns={columns} dataSource={rows} size="middle" onRow={(j) => ({ onClick: (e) => { if (!(e.target as HTMLElement).closest('a')) nav(`/jobs/${j.id}`); }, className: 'clickable' })}
         pagination={{ pageSize: 15, showTotal: (t, [a, b]) => `${a}–${b} / ${t}`, showSizeChanger: false }}
         locale={{ emptyText: <div className="empty">{tr('Không có job nào khớp bộ lọc.', 'No jobs match these filters.')}</div> }} scroll={{ x: 1000 }} />
-      <NewJobModal open={params.get('new') === '1'} onClose={() => setParams({})} />
+      <NewJobModal open={params.get('new') === '1'} onClose={() => setParams({})} initial={{ project: params.get('project') ?? undefined, workflow: params.get('workflow') ?? undefined }} />
     </>
   );
 }
 
-function NewJobModal({ open, onClose }: { open: boolean; onClose: () => void }) {
+function NewJobModal({ open, onClose, initial }: { open: boolean; onClose: () => void; initial: { project?: string; workflow?: string } }) {
   const [form] = Form.useForm();
   const { message } = App.useApp();
   const budget = useBudget();
@@ -79,6 +80,10 @@ function NewJobModal({ open, onClose }: { open: boolean; onClose: () => void }) 
   const flowId = Form.useWatch('workflow', form);
   const p = projectId ? projectById[projectId] : undefined;
   const wf = flowId ? workflowById[flowId] : undefined;
+  // The test-case workflow needs no requirement: it runs cases from the project's test-case file.
+  const testRun = flowId === 'test-cases';
+  const cases = caseRows.filter((c) => c.project === projectId);
+  const modules = [...new Set(cases.map((c) => c.module))];
 
   const spent = usedToday(budget), state = budgetState(spent, budget.daily, budget.warnAt);
   const pLimit = projectId ? budget.projects[projectId] : null, pSpent = projectId ? usedToday(budget, projectId) : 0;
@@ -87,7 +92,7 @@ function NewJobModal({ open, onClose }: { open: boolean; onClose: () => void }) 
   return (
     <Modal open={open} onCancel={onClose} title={tr('Tạo job', 'New job')} okText={blocked && budget.action === 'queue' ? tr('Tạo và xếp hàng', 'Create and queue') : tr('Tạo và chạy', 'Create and run')} cancelText={tr('Hủy', 'Cancel')} width={640} destroyOnHidden
       onOk={() => form.validateFields().then(() => { message.success(tr('Đã tạo JOB-0152 (prototype, chưa gọi API)', 'Created JOB-0152 (prototype, no API call)')); onClose(); })}>
-      <Form form={form} layout="vertical" requiredMark={false} initialValues={{ maxFix: 3 }}
+      <Form form={form} layout="vertical" requiredMark={false} initialValues={{ maxFix: 3, cases: 'all', ...initial }}
         onValuesChange={(c) => { if (c.project) form.setFieldsValue({ workflow: projectById[c.project].defaultWorkflow }); }}>
         <Form.Item label={tr('Tên job', 'Job title')} name="title" rules={[{ required: true, message: tr('Nhập tên job', 'Enter a title') }]}><Input placeholder={tr('Ví dụ: Thêm API quản lý người dùng', 'e.g. Add a user management API')} /></Form.Item>
         <div className="form-2">
@@ -98,9 +103,16 @@ function NewJobModal({ open, onClose }: { open: boolean; onClose: () => void }) 
           </Form.Item>
         </div>
         {wf && <p className="note flow-desc">{tx(wf.description)}</p>}
-        <Form.Item label={tr('Tài liệu yêu cầu', 'Requirement document')} name="req" rules={[{ required: true, message: tr('Đính kèm tài liệu yêu cầu', 'Attach the requirement') }]} extra={tr('Markdown, TXT, DOCX hoặc PDF, tối đa 10 MB.', 'Markdown, TXT, DOCX or PDF, up to 10 MB.')} valuePropName="fileList" getValueFromEvent={(e) => e?.fileList}>
+        {testRun && (p && !sources[p.id]?.cases ? <Alert type="warning" showIcon={false} message={<>{tr(`${p.name} chưa gắn file test case.`, `${p.name} has no test-case file.`)} <Link to="/sources/links">{tr('Gắn file', 'Link a file')}</Link></>} />
+          : <div className="form-2">
+            <Form.Item label={tr('Chạy test case nào', 'Which cases')} name="cases" extra={p ? tr(`Từ file test case của ${p.name}: ${cases.length} ca.`, `From ${p.name}'s test-case file: ${cases.length} cases.`) : undefined}>
+              <Select options={[{ value: 'all', label: tr('Tất cả', 'All') }, { value: 'failed', label: tr(`Ca lỗi lần trước (${cases.filter((c) => c.last === 'fail').length})`, `Failed last time (${cases.filter((c) => c.last === 'fail').length})`) }, ...modules.map((m) => ({ value: `module:${m}`, label: tr(`Chức năng: ${m}`, `Module: ${m}`) }))]} />
+            </Form.Item>
+            <Form.Item label={tr('Chạy trên', 'Run against')} name="env" extra={tr('Để trống: build và chạy app trong sandbox.', 'Empty: build and run the app in the sandbox.')}><Input placeholder="https://staging…" className="mono" /></Form.Item>
+          </div>)}
+        {!testRun && <Form.Item label={tr('Tài liệu yêu cầu', 'Requirement document')} name="req" rules={[{ required: true, message: tr('Đính kèm tài liệu yêu cầu', 'Attach the requirement') }]} extra={tr('Markdown, TXT, DOCX hoặc PDF, tối đa 10 MB.', 'Markdown, TXT, DOCX or PDF, up to 10 MB.')} valuePropName="fileList" getValueFromEvent={(e) => e?.fileList}>
           <Upload beforeUpload={() => false} maxCount={1} accept=".md,.txt,.docx,.pdf"><Button>{tr('Chọn file', 'Choose file')}</Button></Upload>
-        </Form.Item>
+        </Form.Item>}
         <div className="form-2">
           <Form.Item label="Branch" name="branch" extra={p ? tr(`Tạo từ ${p.branch}`, `Created from ${p.branch}`) : undefined}><Input placeholder={tr('Tự đặt nếu để trống', 'Named for you if empty')} className="mono" /></Form.Item>
           <Form.Item label={budget.unit === 'usd' ? tr('Hạn mức cho job này (USD)', 'Limit for this job (USD)') : tr('Hạn mức cho job này (triệu token)', 'Limit for this job (million tokens)')} name="jobLimit" extra={tr(`Để trống: dùng mức chung ${fmtAmount(budget, budget.perJob)}`, `Empty: the workspace limit, ${fmtAmount(budget, budget.perJob)}`)}><InputNumber min={0.1} step={budget.unit === 'usd' ? 0.5 : 0.1} style={{ width: '100%' }} /></Form.Item>

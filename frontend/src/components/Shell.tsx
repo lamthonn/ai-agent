@@ -39,6 +39,7 @@ export function Shell({ children }: { children: ReactNode }) {
     { to: '/workflows', label: 'Workflows', icon: 'workflow' },
     { to: '/agents', label: 'Agents', icon: 'agents' },
     { to: '/projects', label: 'Projects', icon: 'projects' },
+    { to: '/sources', label: 'Bug & test case', icon: 'sources' },
     { to: '/monitoring', label: tr('Giám sát', 'Monitoring'), icon: 'monitoring' },
   ];
 

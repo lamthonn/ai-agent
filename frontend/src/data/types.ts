@@ -1,6 +1,6 @@
 import type { Text } from '../i18n';
 
-export type StepId = 'analyze' | 'plan' | 'approve_plan' | 'code' | 'build_test' | 'fix' | 'review' | 'approve_merge' | 'end';
+export type StepId = 'analyze' | 'plan' | 'approve_plan' | 'code' | 'build_test' | 'fix' | 'review' | 'approve_merge' | 'end' | 'prepare' | 'run_cases' | 'log_bugs';
 export type StepState = 'done' | 'running' | 'waiting' | 'failed' | 'pending' | 'skipped';
 export type JobStatus = 'queued' | 'running' | 'approval' | 'succeeded' | 'failed' | 'cancelled';
 

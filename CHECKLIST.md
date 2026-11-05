@@ -32,7 +32,7 @@
 - [ ] B10. Đăng nhập thật (SSO / email) thay nút đổi người dùng của prototype
 - [ ] B9. Dịch nội dung do người dùng nhập (tên node, log, kế hoạch) — hiện giữ nguyên tiếng Việt
 
-## C. Backend & runtime (theo roadmap)
+## C. Backend & runtime (kế hoạch chi tiết: [docs/BACKEND-PLAN.md](docs/BACKEND-PLAN.md))
 
 - [ ] C1. Agent runtime Python: chạy 1 job trên 1 repo (Phase 1)
 - [ ] C2. Multi-agent: phân tích, kế hoạch, code, test, review, sửa (Phase 2)
@@ -51,3 +51,10 @@
 - [x] D5. Hạn mức mặc định $1/ngày, $0,50/job
 - [x] D6. Không tự duyệt job của mình: có công tắc, mặc định bật
 - [ ] D7. Chạy agent bằng Claude Pro hay API key (xem roadmap 3.2): Pro tính theo giới hạn lượt dùng, không theo USD
+ 
+## E. Yêu cầu tiếp theo
+
+- [x] E1. Gắn file bug (Google Sheet / Excel) cho project, hệ thống tự đọc, phân loại, tạo job sửa, ghi kết quả ngược vào file (màn **Bug & test case**; backend: mốc 6)
+- [x] E2. Workflow **Kiểm thử theo test case**: chạy test case có sẵn trong file test case, ca lỗi ghi vào file bug; không sửa code, không viết test mới
+- [x] D8. Chế độ mặc định của file bug: Chỉ đề xuất · Kiểm thử chỉ chạy test case có sẵn
+- [ ] D9. Gửi file bug và file test case mẫu để chốt ghép cột

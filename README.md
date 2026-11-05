@@ -21,10 +21,11 @@ Cần Node 20.19+ (khuyến nghị Node 22 hoặc 24).
 | Màn | Route |
 | --- | --- |
 | Tổng quan | `#/` |
-| Jobs / chi tiết job | `#/jobs`, `#/jobs/JOB-0148` |
+| Jobs / chi tiết job | `#/jobs`, `#/jobs/JOB-0149` |
 | Chờ duyệt | `#/approvals` |
 | Workflows / Builder | `#/workflows`, `#/workflows/ai-coding?v=2` |
 | Agents · Projects · Giám sát | `#/agents`, `#/projects`, `#/monitoring` |
+| Bug & test case | `#/sources/bugs`, `#/sources/cases`, `#/sources/links` |
 | Cài đặt (hạn mức chi phí) | `#/settings/budget` |
 
 Logo và màu lấy từ bộ nhận diện Codes Tech (`codes-tech-brand-assets.zip`), favicon trong `frontend/public/brand/`.

@@ -32,6 +32,8 @@ export const agents: Agent[] = [
     prompt: 'Bạn sửa lỗi từ kết quả build/test hoặc review.\n- Tìm nguyên nhân trước khi sửa.\n- Mỗi vòng chỉ sửa những gì lỗi chỉ ra.\n- Không sửa test để test qua.' },
   { id: 'code-reviewer', name: 'Code Reviewer', role: { vi: 'Review diff, tìm bug và thay đổi ngoài phạm vi', en: 'Reviews the diff for bugs and out-of-scope changes' }, model: 'claude-opus-5-5', perm: 'read', tools: ['Read', 'Grep', 'Glob'], maxTurns: 20,
     prompt: 'Bạn review Git diff của job.\n- Tìm bug, lỗ hổng bảo mật, thay đổi ngoài phạm vi.\n- Kết luận Đạt hoặc Không đạt kèm lý do.' },
+  { id: 'test-runner', name: 'Test Case Runner', role: { vi: 'Chạy từng test case có sẵn trên app trong sandbox, ghi Đạt/Lỗi kèm ảnh chụp', en: 'Runs each existing test case against the app in the sandbox; records pass/fail with screenshots' }, model: 'claude-sonnet-5-5', perm: 'test', tools: ['Read', 'Bash'], maxTurns: 80,
+    prompt: 'Bạn chạy các test case trong file test case của project, trên app đang chạy trong sandbox (Playwright).\n- Làm đúng từng bước, so với kết quả mong đợi, ghi Đạt hoặc Lỗi kèm ảnh chụp.\n- Ca lỗi chạy lại 1 lần: lần sau đạt thì ghi là chập chờn, vẫn lỗi mới tính là lỗi.\n- Không sửa code, không viết test mới, không thêm test case.' },
 ];
 
 // Labels for every step a trace can show; each workflow version lists the ones it has.
@@ -45,6 +47,9 @@ export const stepLabels: Record<StepId, { vi: string; en: string }> = {
   review: { vi: 'Review', en: 'Review' },
   approve_merge: { vi: 'Duyệt merge', en: 'Merge OK' },
   end: { vi: 'Báo cáo', en: 'Report' },
+  prepare: { vi: 'Chuẩn bị', en: 'Prepare' },
+  run_cases: { vi: 'Chạy test case', en: 'Run cases' },
+  log_bugs: { vi: 'Ghi bug', en: 'Log bugs' },
 };
 
 // Seeded generator for the history, so every load shows the same numbers.

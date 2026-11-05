@@ -83,6 +83,26 @@ export const workflows: Workflow[] = [
         edges: [{ from: 'start', to: 'checkout' }, { from: 'checkout', to: 'build_test' }, { from: 'build_test', to: 'review' }, { from: 'review', to: 'end' }] },
     ],
   },
+  {
+    id: 'test-cases',
+    name: { vi: 'Kiểm thử theo test case', en: 'Run test cases' },
+    description: { vi: 'Chạy các test case có sẵn trên app trong sandbox; ca lỗi được ghi vào file bug. Không sửa code, không cần duyệt', en: 'Runs the existing test cases against the app in a sandbox; failed cases go to the bug file. No code changes, no approval' },
+    versions: [
+      { version: 1, date: '2026-11-05', by: 'ma', note: { vi: 'Bản đầu tiên', en: 'First version' }, steps: ['prepare', 'run_cases', 'log_bugs', 'end'],
+        nodes: [
+          { id: 'start', type: 'start', label: 'Bắt đầu', x: 0, y: 0 },
+          { id: 'prepare', type: 'command', label: 'Chuẩn bị môi trường', command: '{project.build} && {project.run}', x: 220, y: 0 },
+          { id: 'run_cases', type: 'agent', label: 'Chạy test case', agent: 'test-runner', x: 440, y: 0 },
+          { id: 'cases_ok', type: 'condition', label: 'Tất cả đạt?', expr: 'cases.failed == 0', x: 440, y: 120 },
+          { id: 'log_bugs', type: 'command', label: 'Ghi ca lỗi vào file bug', command: 'sheet.append({project.bugs}, cases.failed)', x: 220, y: 120 },
+          { id: 'end', type: 'end', label: 'Báo cáo & kết thúc', x: 440, y: 240 },
+        ],
+        edges: [
+          { from: 'start', to: 'prepare' }, { from: 'prepare', to: 'run_cases' }, { from: 'run_cases', to: 'cases_ok' },
+          { from: 'cases_ok', to: 'end', label: 'Đạt' }, { from: 'cases_ok', to: 'log_bugs', label: 'Có lỗi' }, { from: 'log_bugs', to: 'end' },
+        ] },
+    ],
+  },
 ];
 // v1 of quick-fix predates the builder's saved layout; it shows v2's canvas minus the review node.
 const qf = workflows[1].versions;
