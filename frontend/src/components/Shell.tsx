@@ -1,10 +1,11 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
-import { Segmented } from 'antd';
+import { Dropdown, Segmented } from 'antd';
 import { Icon } from './Icon';
 import { Avatar } from './StatusPill';
-import { approvals, jobs, me, NOW } from '../data/sample';
-import { setLang, tr, tx, useLang, type Lang } from '../i18n';
+import { approvals, jobById, jobs, NOW } from '../data/sample';
+import { canSee, isAdmin, projectsOf, switchAccount, useAccess, useMe } from '../data/access';
+import { setLang, tr, useLang, type Lang } from '../i18n';
 
 export const PRODUCT = 'Codes Loop';
 
@@ -16,9 +17,20 @@ export function Shell({ children }: { children: ReactNode }) {
   const lang = useLang();
   useEffect(() => setOpen(false), [loc.pathname]);
 
-  const pending = approvals.filter((a) => a.status === 'pending').length;
+  const me = useMe();
+  const { accounts } = useAccess();
+  // counts follow what this account can see
+  const pending = approvals.filter((a) => a.status === 'pending' && canSee(me, jobById[a.job].project)).length;
   const today = new Date(NOW.getFullYear(), NOW.getMonth(), NOW.getDate());
-  const failedToday = jobs.filter((j) => j.status === 'failed' && j.start >= today).length;
+  const failedToday = jobs.filter((j) => j.status === 'failed' && j.start >= today && canSee(me, j.project)).length;
+  const roleText = isAdmin(me) ? 'Admin' : tr(`Thành viên · ${projectsOf(me).length} project`, `Member · ${projectsOf(me).length} projects`);
+  const switcher = {
+    items: [
+      { key: 'h', type: 'group' as const, label: tr('Đăng nhập với tư cách (prototype)', 'Sign in as (prototype)'),
+        children: accounts.filter((a) => a.active).map((a) => ({ key: a.id, label: `${a.name} · ${a.role === 'admin' ? 'Admin' : tr('Thành viên', 'Member')}` })) },
+    ],
+    selectable: true, selectedKeys: [me.id], onClick: ({ key }: { key: string }) => switchAccount(key),
+  };
 
   const nav = [
     { to: '/', label: tr('Tổng quan', 'Overview'), icon: 'overview', end: true },
@@ -54,7 +66,7 @@ export function Shell({ children }: { children: ReactNode }) {
           <NavLink to="/settings" className={() => `nav-item${loc.pathname.startsWith('/settings') ? ' active' : ''}`}><Icon name="settings" /><span>{tr('Cài đặt', 'Settings')}</span></NavLink>
           <div className="user-row">
             <Avatar {...me} />
-            <div><div>{me.name}</div><div className="meta">{tx(me.role)}</div></div>
+            <div><div>{me.name}</div><div className="meta">{roleText}</div></div>
           </div>
         </div>
       </aside>
@@ -69,7 +81,9 @@ export function Shell({ children }: { children: ReactNode }) {
           <div className="topbar-right">
             <Segmented size="small" value={lang} onChange={(v) => setLang(v as Lang)} options={[{ label: 'VI', value: 'vi' }, { label: 'EN', value: 'en' }]} aria-label={tr('Ngôn ngữ', 'Language')} />
             <button className="btn ghost help" aria-label={tr('Trợ giúp', 'Help')}><Icon name="help" /></button>
-            <Avatar {...me} />
+            <Dropdown menu={switcher} trigger={['click']} placement="bottomRight">
+              <button className="avatar-btn" aria-label={tr(`Tài khoản: ${me.name}. Đổi tài khoản`, `Account: ${me.name}. Switch account`)}><Avatar {...me} /></button>
+            </Dropdown>
           </div>
         </header>
         <main className="sheet">{children}</main>

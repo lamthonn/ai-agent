@@ -13,6 +13,7 @@ import { agents, jobs, people, projects } from '../data/sample';
 import { latest, workflowById } from '../data/workflows';
 import type { NodeType, WfEdge, WfNode, Workflow, WorkflowVersion } from '../data/types';
 import { Icon } from '../components/Icon';
+import { approverLabel } from '../data/access';
 import { isoDay } from '../lib/format';
 import { useTitle } from '../lib/useTitle';
 import { tr, tx } from '../i18n';
@@ -37,7 +38,7 @@ function FlowNodeView({ data, selected }: NodeProps<FlowNode>) {
   const k = kindOf(data.type);
   const sub = data.type === 'agent' ? agents.find((a) => a.id === data.agent)?.name ?? tr('Chưa chọn agent', 'No agent chosen')
     : data.type === 'condition' ? data.expr : data.type === 'test' || data.type === 'command' || data.type === 'git' ? data.command
-    : data.type === 'approval' ? tr(`Người duyệt: ${data.approver}`, `Approver: ${data.approver}`) : k.hint;
+    : data.type === 'approval' ? tr(`Duyệt: ${approverLabel(data.approver)}`, `Approver: ${approverLabel(data.approver)}`) : k.hint;
   return (
     <div className={`wf-node t-${data.type}${selected ? ' selected' : ''}`}>
       {data.type !== 'start' && sides.map((s) => <Handle key={`t-${s.id}`} id={`t-${s.id}`} type="target" position={s.pos} />)}
@@ -86,7 +87,7 @@ function Builder({ wf, v }: { wf: Workflow; v: WorkflowVersion }) {
     const id = `${type}_${Math.random().toString(36).slice(2, 6)}`;
     const k = kindOf(type);
     const p = pos ?? { x: 660, y: 40 + nodes.length * 8 };
-    setNodes((ns) => [...ns, toFlow({ id, type, label: k.label, x: p.x, y: p.y, ...(type === 'agent' ? { agent: '' } : {}), ...(type === 'approval' ? { approver: 'Tech lead' } : {}), ...(type === 'condition' ? { expr: '' } : {}) })]);
+    setNodes((ns) => [...ns, toFlow({ id, type, label: k.label, x: p.x, y: p.y, ...(type === 'agent' ? { agent: '' } : {}), ...(type === 'approval' ? { approver: 'project' } : {}), ...(type === 'condition' ? { expr: '' } : {}) })]);
     setSelId(id); setDirty(true);
   };
   const onDrop = (e: DragEvent) => {
@@ -184,7 +185,7 @@ function Builder({ wf, v }: { wf: Workflow; v: WorkflowVersion }) {
               </>)}
               {sel.data.type === 'condition' && <div className="field"><label htmlFor="p-expr">{tr('Điều kiện', 'Condition')}</label><Input id="p-expr" className="mono" value={sel.data.expr} onChange={(e) => update({ expr: e.target.value })} placeholder="exit_code == 0" /><span className="hint">{tr('Nhãn nhánh ra: "Đạt" và "Lỗi".', 'Label the branches "Pass" and "Fail".')}</span></div>}
               {(sel.data.type === 'test' || sel.data.type === 'command' || sel.data.type === 'git') && <div className="field"><label htmlFor="p-cmd">{tr('Lệnh', 'Command')}</label><Input id="p-cmd" className="mono" value={sel.data.command} onChange={(e) => update({ command: e.target.value })} /><span className="hint">{tr('{project.build} và {project.test} lấy từ cấu hình project.', '{project.build} and {project.test} come from the project settings.')}</span></div>}
-              {sel.data.type === 'approval' && <div className="field"><label htmlFor="p-appr">{tr('Người duyệt', 'Approver')}</label><Segmented id="p-appr" disabled={readOnly} value={sel.data.approver} onChange={(x) => update({ approver: String(x) })} options={[{ value: 'Tech lead', label: 'Tech lead' }, { value: 'Người tạo job', label: tr('Người tạo job', 'Job creator') }]} /></div>}
+              {sel.data.type === 'approval' && <div className="field"><label htmlFor="p-appr">{tr('Người duyệt', 'Approver')}</label><Segmented id="p-appr" disabled={readOnly} value={sel.data.approver} onChange={(x) => update({ approver: String(x) })} options={[{ value: 'project', label: approverLabel('project') }, { value: 'admin', label: 'Admin' }]} /><span className="hint">{tr('Thành viên của project: ai được cấp quyền vào project của job đều duyệt được.', 'Project members: anyone with access to the job’s project can approve.')}</span></div>}
               {sel.data.type === 'delay' && <div className="field"><label htmlFor="p-delay">{tr('Chờ (phút)', 'Wait (minutes)')}</label><InputNumber id="p-delay" min={1} value={sel.data.delayMin ?? 5} onChange={(x) => update({ delayMin: x ?? 5 })} style={{ width: '100%' }} /></div>}
               <div className="field"><span className="label-like">{tr('Kết nối', 'Connections')}</span>
                 <ul className="conn">

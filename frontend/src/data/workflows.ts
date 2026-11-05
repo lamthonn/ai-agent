@@ -8,14 +8,14 @@ const codingNodesV3: WorkflowVersion['nodes'] = [
   { id: 'start', type: 'start', label: 'Bắt đầu', x: 0, y: 0 },
   { id: 'analyze', type: 'agent', label: 'Phân tích yêu cầu', agent: 'requirement-analyzer', x: 220, y: 0 },
   { id: 'plan', type: 'agent', label: 'Lập kế hoạch', agent: 'architect', x: 440, y: 0 },
-  { id: 'approve_plan', type: 'approval', label: 'Duyệt kế hoạch', approver: 'Tech lead', x: 440, y: 120 },
+  { id: 'approve_plan', type: 'approval', label: 'Duyệt kế hoạch', approver: 'project', x: 440, y: 120 },
   { id: 'code', type: 'agent', label: 'Viết code', agent: 'coder', x: 220, y: 120 },
   { id: 'build_test', type: 'test', label: 'Build & test', command: '{project.build} && {project.test}', x: 0, y: 120 },
   { id: 'build_ok', type: 'condition', label: 'Build & test đạt?', expr: 'exit_code == 0', x: 0, y: 240 },
   { id: 'fix', type: 'agent', label: 'Sửa lỗi', agent: 'fixer', maxLoops: 3, x: -220, y: 240 },
   { id: 'review', type: 'agent', label: 'Review code', agent: 'code-reviewer', x: 0, y: 360 },
   { id: 'review_ok', type: 'condition', label: 'Review đạt?', expr: 'review.verdict == "pass"', x: 220, y: 360 },
-  { id: 'approve_merge', type: 'approval', label: 'Duyệt merge', approver: 'Tech lead', x: 440, y: 360 },
+  { id: 'approve_merge', type: 'approval', label: 'Duyệt merge', approver: 'project', x: 440, y: 360 },
   { id: 'end', type: 'end', label: 'Báo cáo & kết thúc', x: 440, y: 480 },
 ];
 const codingEdgesV3: WorkflowVersion['edges'] = [
@@ -57,7 +57,7 @@ export const workflows: Workflow[] = [
           { id: 'build_ok', type: 'condition', label: 'Build & test đạt?', expr: 'exit_code == 0', x: 220, y: 120 },
           { id: 'fix', type: 'agent', label: 'Sửa lỗi', agent: 'fixer', maxLoops: 2, x: 0, y: 120 },
           { id: 'review', type: 'agent', label: 'Review code', agent: 'code-reviewer', x: 220, y: 240 },
-          { id: 'approve_merge', type: 'approval', label: 'Duyệt merge', approver: 'Người tạo job', x: 440, y: 240 },
+          { id: 'approve_merge', type: 'approval', label: 'Duyệt merge', approver: 'project', x: 440, y: 240 },
           { id: 'end', type: 'end', label: 'Báo cáo & kết thúc', x: 440, y: 360 },
         ],
         edges: [

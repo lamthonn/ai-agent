@@ -5,7 +5,8 @@ import type { ColumnsType } from 'antd/es/table';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { jobs, projectById, projects, people } from '../data/sample';
 import { latest, workflowById, workflows } from '../data/workflows';
-import { budgetState, spentToday, useBudget } from '../data/budget';
+import { budgetState, fmtAmount, usedToday, useBudget } from '../data/budget';
+import { canSee, isAdmin, useMe } from '../data/access';
 import type { Job, JobStatus } from '../data/types';
 import { StatusPill, WorkflowRef } from '../components/StatusPill';
 import { currentStep, RunTrace } from '../components/RunTrace';
@@ -22,6 +23,9 @@ export function Jobs() {
   const [q, setQ] = useState('');
   const [project, setProject] = useState<string | undefined>();
   const [flow, setFlow] = useState<string | undefined>();
+  const me = useMe();
+  const visible = useMemo(() => jobs.filter((j) => canSee(me, j.project)), [me]);
+  const myProjects = projects.filter((p) => canSee(me, p.id));
 
   const tabs: { key: string; label: string; match: (s: JobStatus) => boolean }[] = [
     { key: 'all', label: tr('Tất cả', 'All'), match: () => true },
@@ -31,7 +35,7 @@ export function Jobs() {
     { key: 'done', label: tr('Hoàn tất', 'Finished'), match: (s) => s === 'succeeded' || s === 'cancelled' },
   ];
 
-  const scoped = useMemo(() => jobs.filter((j) => (!project || j.project === project) && (!flow || j.workflowId === flow) && (!q || `${j.id} ${j.title} ${j.branch}`.toLowerCase().includes(q.toLowerCase()))), [q, project, flow]);
+  const scoped = useMemo(() => visible.filter((j) => (!project || j.project === project) && (!flow || j.workflowId === flow) && (!q || `${j.id} ${j.title} ${j.branch}`.toLowerCase().includes(q.toLowerCase()))), [q, project, flow, visible]);
   const rows = scoped.filter((j) => tabs.find((t) => t.key === tab)!.match(j.status));
 
   const columns: ColumnsType<Job> = [
@@ -47,13 +51,13 @@ export function Jobs() {
   return (
     <>
       <div className="title-row">
-        <div><h1>Jobs</h1><p className="sub">{tr('Mỗi job chạy một phiên bản workflow cố định trên branch riêng, không đụng branch gốc.', 'Each job runs one fixed workflow version on its own branch and never touches the base branch.')}</p></div>
+        <div><h1>Jobs</h1><p className="sub">{isAdmin(me) ? tr('Mỗi job chạy một phiên bản workflow cố định trên branch riêng, không đụng branch gốc.', 'Each job runs one fixed workflow version on its own branch and never touches the base branch.') : tr(`Job trong ${myProjects.length} project bạn được cấp quyền: ${myProjects.map((p) => p.name).join(', ') || 'chưa có'}.`, `Jobs in the ${myProjects.length} projects you can access: ${myProjects.map((p) => p.name).join(', ') || 'none yet'}.`)}</p></div>
         <div className="title-actions"><Button type="primary" icon={<Icon name="plus" />} onClick={() => setParams({ new: '1' })}>{tr('Tạo job', 'New job')}</Button></div>
       </div>
       <Tabs activeKey={tab} onChange={setTab} items={tabs.map((t) => ({ key: t.key, label: <span>{t.label} <span className="tab-count num">{scoped.filter((j) => t.match(j.status)).length}</span></span> }))} />
       <div className="filters">
         <Input allowClear prefix={<Icon name="search" size={14} />} placeholder={tr('Tìm theo mã, tên hoặc branch', 'Search by ID, title or branch')} value={q} onChange={(e) => setQ(e.target.value)} style={{ width: 280 }} aria-label={tr('Tìm job', 'Search jobs')} />
-        <Select allowClear placeholder={tr('Tất cả project', 'All projects')} value={project} onChange={setProject} style={{ width: 190 }} options={projects.map((p) => ({ value: p.id, label: p.name }))} aria-label={tr('Lọc theo project', 'Filter by project')} />
+        <Select allowClear placeholder={tr('Tất cả project', 'All projects')} value={project} onChange={setProject} style={{ width: 190 }} options={myProjects.map((p) => ({ value: p.id, label: p.name }))} aria-label={tr('Lọc theo project', 'Filter by project')} />
         <Select allowClear placeholder={tr('Tất cả workflow', 'All workflows')} value={flow} onChange={setFlow} style={{ width: 190 }} options={workflows.map((w) => ({ value: w.id, label: tx(w.name) }))} aria-label={tr('Lọc theo workflow', 'Filter by workflow')} />
         <span className="spacer" />
         <span className="meta num">{int(rows.length)} job</span>
@@ -70,13 +74,14 @@ function NewJobModal({ open, onClose }: { open: boolean; onClose: () => void }) 
   const [form] = Form.useForm();
   const { message } = App.useApp();
   const budget = useBudget();
+  const me = useMe();
   const projectId = Form.useWatch('project', form);
   const flowId = Form.useWatch('workflow', form);
   const p = projectId ? projectById[projectId] : undefined;
   const wf = flowId ? workflowById[flowId] : undefined;
 
-  const spent = spentToday(), state = budgetState(spent, budget.daily, budget.warnAt);
-  const pLimit = projectId ? budget.projects[projectId] : null, pSpent = projectId ? spentToday(projectId) : 0;
+  const spent = usedToday(budget), state = budgetState(spent, budget.daily, budget.warnAt);
+  const pLimit = projectId ? budget.projects[projectId] : null, pSpent = projectId ? usedToday(budget, projectId) : 0;
   const blocked = budget.enabled && (state === 'over' || (pLimit != null && pSpent >= pLimit));
 
   return (
@@ -86,7 +91,7 @@ function NewJobModal({ open, onClose }: { open: boolean; onClose: () => void }) 
         onValuesChange={(c) => { if (c.project) form.setFieldsValue({ workflow: projectById[c.project].defaultWorkflow }); }}>
         <Form.Item label={tr('Tên job', 'Job title')} name="title" rules={[{ required: true, message: tr('Nhập tên job', 'Enter a title') }]}><Input placeholder={tr('Ví dụ: Thêm API quản lý người dùng', 'e.g. Add a user management API')} /></Form.Item>
         <div className="form-2">
-          <Form.Item label="Project" name="project" rules={[{ required: true, message: tr('Chọn project', 'Choose a project') }]}><Select options={projects.map((x) => ({ value: x.id, label: x.name }))} /></Form.Item>
+          <Form.Item label="Project" name="project" rules={[{ required: true, message: tr('Chọn project', 'Choose a project') }]} extra={isAdmin(me) ? undefined : tr('Chỉ các project bạn được cấp quyền.', 'Only projects you can access.')}><Select options={projects.filter((x) => canSee(me, x.id)).map((x) => ({ value: x.id, label: x.name }))} /></Form.Item>
           <Form.Item label="Workflow" name="workflow" rules={[{ required: true, message: tr('Chọn workflow', 'Choose a workflow') }]}
             extra={wf ? `${tr('Chạy', 'Runs')} v${latest(wf).version}${p && p.defaultWorkflow === wf.id ? tr(' · mặc định của project', ' · project default') : ''}` : tr('Chọn project để lấy workflow mặc định', 'Pick a project to get its default')}>
             <Select options={workflows.map((w) => ({ value: w.id, label: tx(w.name) }))} />
@@ -98,14 +103,14 @@ function NewJobModal({ open, onClose }: { open: boolean; onClose: () => void }) 
         </Form.Item>
         <div className="form-2">
           <Form.Item label="Branch" name="branch" extra={p ? tr(`Tạo từ ${p.branch}`, `Created from ${p.branch}`) : undefined}><Input placeholder={tr('Tự đặt nếu để trống', 'Named for you if empty')} className="mono" /></Form.Item>
-          <Form.Item label={tr('Hạn mức chi phí cho job này (USD)', 'Cost limit for this job (USD)')} name="jobLimit" extra={tr(`Để trống: dùng mức chung ${usd(budget.perJob)}`, `Empty: the workspace limit, ${usd(budget.perJob)}`)}><InputNumber min={0.5} step={0.5} style={{ width: '100%' }} /></Form.Item>
+          <Form.Item label={budget.unit === 'usd' ? tr('Hạn mức cho job này (USD)', 'Limit for this job (USD)') : tr('Hạn mức cho job này (triệu token)', 'Limit for this job (million tokens)')} name="jobLimit" extra={tr(`Để trống: dùng mức chung ${fmtAmount(budget, budget.perJob)}`, `Empty: the workspace limit, ${fmtAmount(budget, budget.perJob)}`)}><InputNumber min={0.1} step={budget.unit === 'usd' ? 0.5 : 0.1} style={{ width: '100%' }} /></Form.Item>
         </div>
         {p && <p className="note">Build: <code>{p.build}</code> · Test: <code>{p.test}</code></p>}
         {budget.enabled && (
           <Alert type={blocked ? 'warning' : 'info'} showIcon={false} className="budget-alert"
             message={<>
-              {tr('Hôm nay đã dùng', 'Spent today')} <strong className="num">{usd(spent)}</strong> / {usd(budget.daily)}
-              {p && pLimit != null && <> · {p.name}: <strong className="num">{usd(pSpent)}</strong> / {usd(pLimit)}</>}
+              {tr('Hôm nay đã dùng', 'Used today')} <strong className="num">{fmtAmount(budget, spent)}</strong> / {fmtAmount(budget, budget.daily)}
+              {p && pLimit != null && <> · {p.name}: <strong className="num">{fmtAmount(budget, pSpent)}</strong> / {fmtAmount(budget, pLimit)}</>}
               {blocked && <> — {budget.action === 'queue' ? tr('job sẽ vào hàng đợi tới ngày mai.', 'the job will be queued until tomorrow.') : budget.action === 'pause' ? tr('job mới bị chặn.', 'new jobs are blocked.') : tr('chỉ cảnh báo, job vẫn chạy.', 'warning only; the job still runs.')}</>}
             </>} />
         )}

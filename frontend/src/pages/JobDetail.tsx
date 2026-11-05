@@ -3,7 +3,8 @@ import { App, Button, Popconfirm, Tabs } from 'antd';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { approvals, jobById, people, projectById } from '../data/sample';
 import { contentFor } from '../data/jobContent';
-import { useBudget } from '../data/budget';
+import { fmtAmount, useBudget } from '../data/budget';
+import { approversOf, canApprove, canSee, useMe } from '../data/access';
 import { RunTrace, TraceLegend, currentStep, maxFixOf } from '../components/RunTrace';
 import { StatusPill, WorkflowRef } from '../components/StatusPill';
 import { Icon } from '../components/Icon';
@@ -18,6 +19,8 @@ export function JobDetail() {
   const nav = useNavigate();
   const { message } = App.useApp();
   const budget = useBudget();
+  const me = useMe();
+  if (job && !canSee(me, job.project)) return <div className="title-row"><div><h1>{tr('Bạn chưa được cấp quyền vào project này', 'You do not have access to this project')}</h1><p className="sub">{tr(`${job.id} thuộc ${projectById[job.project].name}. Hãy nhờ admin cấp quyền.`, `${job.id} belongs to ${projectById[job.project].name}. Ask an admin for access.`)} <Link to="/jobs">{tr('Về danh sách jobs', 'Back to jobs')}</Link></p></div></div>;
   if (!job) return <div className="title-row"><div><h1>{tr(`Không tìm thấy job ${id}`, `Job ${id} not found`)}</h1><p className="sub"><Link to="/jobs">{tr('Về danh sách jobs', 'Back to jobs')}</Link></p></div></div>;
 
   const p = projectById[job.project];
@@ -30,7 +33,7 @@ export function JobDetail() {
   const actions = {
     running: <><Button icon={<Icon name="pause" />} onClick={() => proto('Đã gửi lệnh tạm dừng', 'Pause sent')}>{tr('Tạm dừng', 'Pause')}</Button><Popconfirm title={tr(`Hủy ${job.id}?`, `Cancel ${job.id}?`)} description={tr('Branch và workspace được giữ lại.', 'The branch and workspace are kept.')} okText={tr('Hủy job', 'Cancel job')} cancelText={tr('Không', 'No')} onConfirm={() => proto('Đã hủy', 'Cancelled')}><Button danger icon={<Icon name="stop" />}>{tr('Hủy', 'Cancel')}</Button></Popconfirm></>,
     queued: <Popconfirm title={tr(`Bỏ ${job.id} khỏi hàng đợi?`, `Remove ${job.id} from the queue?`)} okText={tr('Bỏ', 'Remove')} cancelText={tr('Không', 'No')}><Button danger>{tr('Bỏ khỏi hàng đợi', 'Remove from queue')}</Button></Popconfirm>,
-    approval: <Button type="primary" onClick={() => nav(`/approvals/${apr?.id}`)}>{job.approval === 'plan' ? tr('Duyệt kế hoạch', 'Review plan') : tr('Duyệt merge', 'Review merge')}</Button>,
+    approval: <Button type="primary" disabled={!canApprove(me, job.project)} title={canApprove(me, job.project) ? undefined : tr('Bạn không có quyền duyệt project này', 'You cannot approve in this project')} onClick={() => nav(`/approvals/${apr?.id}`)}>{job.approval === 'plan' ? tr('Duyệt kế hoạch', 'Review plan') : tr('Duyệt merge', 'Review merge')}</Button>,
     failed: <><Button onClick={() => proto('Đã mở workspace', 'Workspace opened')}>{tr('Mở workspace', 'Open workspace')}</Button><Button type="primary" icon={<Icon name="play" />} onClick={() => proto('Đã chạy lại từ bước Sửa lỗi với thêm 2 vòng', 'Re-ran from Fix with 2 more rounds')}>{tr('Chạy lại bước sửa', 'Re-run fix step')}</Button></>,
     succeeded: <Button>{tr('Tải báo cáo', 'Download report')}</Button>,
     cancelled: <Button icon={<Icon name="play" />}>{tr('Chạy lại', 'Run again')}</Button>,
@@ -89,10 +92,11 @@ export function JobDetail() {
             <div><dt>{tr('Thời gian chạy', 'Run time')}</dt><dd className="num">{job.minutes ? duration(job.minutes) : '—'}</dd></div>
             <div><dt>{tr('Kết thúc', 'Ended')}</dt><dd className="num">{job.end ? clock(job.end) : '—'}</dd></div>
             <div><dt>Token</dt><dd className="num">{job.tokens ? int(job.tokens) : '—'}</dd></div>
-            <div><dt>{tr('Chi phí', 'Cost')}</dt><dd className="num">{job.cost ? usd(job.cost) : '—'}{budget.enabled && <span className="sub">{tr(`hạn mức ${usd(budget.perJob)}/job`, `limit ${usd(budget.perJob)} per job`)}</span>}</dd></div>
+            <div><dt>{tr('Chi phí', 'Cost')}</dt><dd className="num">{job.cost ? usd(job.cost) : '—'}{budget.enabled && <span className="sub">{tr(`hạn mức ${fmtAmount(budget, budget.perJob)}/job`, `limit ${fmtAmount(budget, budget.perJob)} per job`)}</span>}</dd></div>
             <div><dt>Build</dt><dd><code>{p.build}</code></dd></div>
             <div><dt>Test</dt><dd><code>{p.test}</code></dd></div>
             <div><dt>{tr('Branch gốc', 'Base branch')}</dt><dd className="mono">{p.branch}</dd></div>
+            <div><dt>{tr('Người duyệt được', 'Can approve')}</dt><dd>{approversOf(job.project).map((a) => a.name).join(', ')}</dd></div>
           </dl>
           <h3 className="sub-h">Artifact</h3>
           <ul className="rows compact">

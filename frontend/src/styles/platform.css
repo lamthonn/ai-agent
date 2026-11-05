@@ -296,3 +296,19 @@ table.plain td { padding-top: 8px; padding-bottom: 8px; vertical-align: middle; 
 @media (max-width: 1180px) { .flow-card { grid-template-columns: minmax(0, 1fr); gap: 16px; } .flow-actions { align-self: start; } }
 @media (max-width: 860px) { .flow-facts { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } .save-bar { flex-wrap: wrap; } }
 @media (max-width: 860px) { .topbar-right .help { display: none; } }
+
+/* ---------- accounts and access ---------- */
+.avatar-btn { padding: 0; border: 0; background: none; border-radius: 50%; cursor: pointer; }
+.avatar-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.avatars { display: inline-flex; flex-wrap: wrap; gap: 4px; }
+.avatars .avatar { width: 24px; height: 24px; font-size: 10px; }
+.who-cell { display: inline-flex; align-items: center; gap: 10px; }
+.row-actions { display: inline-flex; gap: 6px; }
+.members-panel .ant-table { background: transparent; }
+.approvers { margin-top: 10px; font-size: 13px; }
+table.matrix th.c, table.matrix td.c { text-align: center; width: 64px; }
+table.matrix th.c .avatar { margin: 0 auto; }
+.cell { min-width: 44px; height: 28px; border: 1px solid var(--control); border-radius: 6px; background: var(--surface); color: var(--muted); cursor: pointer; font-size: 12px; font-weight: 500; transition: background-color var(--t-hover) ease; }
+.cell:hover:not(:disabled) { background: var(--raised); }
+.cell.on { background: var(--pill-run-bg); border-color: transparent; color: var(--pill-run-ink); }
+.cell:disabled { cursor: not-allowed; opacity: .7; }

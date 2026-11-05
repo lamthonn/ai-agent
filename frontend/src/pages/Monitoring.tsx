@@ -2,7 +2,7 @@
 import { Link } from 'react-router-dom';
 import { jobs, NOW, projects } from '../data/sample';
 import { workflows } from '../data/workflows';
-import { useBudget } from '../data/budget';
+import { fmtAmount, jobUse, useBudget } from '../data/budget';
 import { Chart } from '../components/Chart';
 import { dayMonth, pct, usd } from '../lib/format';
 import { useTitle } from '../lib/useTitle';
@@ -16,8 +16,10 @@ export function Monitoring() {
   const today = new Date(NOW.getFullYear(), NOW.getMonth(), NOW.getDate());
   const days = [...Array(14)].map((_, i) => new Date(today.getTime() - (13 - i) * DAY));
   const on = (d: Date) => jobs.filter((j) => j.start >= d && j.start < new Date(d.getTime() + DAY));
-  const cost = days.map((d) => Math.round(on(d).reduce((a, j) => a + j.cost, 0) * 100) / 100);
+  // the chart counts in the budget's unit, so the limit line reads against the bars
+  const cost = days.map((d) => Math.round(on(d).reduce((a, j) => a + jobUse(budget, j), 0) * 100) / 100);
   const total = Math.round(cost.reduce((a, b) => a + b, 0) * 100) / 100;
+  const f = (v: number) => fmtAmount(budget, v);
   const peak = cost.indexOf(Math.max(...cost));
   const overDays = budget.enabled ? cost.filter((c) => c >= budget.daily).length : 0;
 
@@ -57,13 +59,13 @@ export function Monitoring() {
       </div>
       <div className="grid">
         <section className="panel span-8" aria-labelledby="h-cost">
-          <header><h2 id="h-cost">{tr('Chi phí Claude API mỗi ngày', 'Claude API spend per day')}</h2><span className="meta num">{tr('Tổng', 'Total')} {usd(total)}{budget.enabled && <> · {tr(`${overDays} ngày chạm hạn mức`, `${overDays} days at the limit`)}</>}</span></header>
+          <header><h2 id="h-cost">{budget.unit === 'usd' ? tr('Chi phí Claude API mỗi ngày', 'Claude API spend per day') : tr('Token Claude API mỗi ngày', 'Claude API tokens per day')}</h2><span className="meta num">{tr('Tổng', 'Total')} {f(total)}{budget.enabled && <> · {tr(`${overDays} ngày chạm hạn mức`, `${overDays} days at the limit`)}</>}</span></header>
           <Chart kind="bars" label={tr('Chi phí mỗi ngày, 14 ngày', 'Spend per day, 14 days')} height={200} opts={{
-            labels: days.map(dayMonth), values: cost, highlight: 13, format: (v: number) => usd(v),
-            annotations: [{ at: peak, label: tr(`Cao nhất ${usd(cost[peak])}`, `Peak ${usd(cost[peak])}`), short: usd(cost[peak]) }],
-            ...(budget.enabled ? { reference: { value: budget.daily, label: tr(`Hạn mức ${usd(budget.daily)}`, `Limit ${usd(budget.daily)}`) } } : {}),
+            labels: days.map(dayMonth), values: cost, highlight: 13, format: f, tickFormat: budget.unit === 'usd' ? f : (v: number) => (v ? `${v / 1_000_000}M` : "0"),
+            annotations: [{ at: peak, label: tr(`Cao nhất ${f(cost[peak])}`, `Peak ${f(cost[peak])}`), short: f(cost[peak]) }],
+            ...(budget.enabled ? { reference: { value: budget.daily, label: tr(`Hạn mức ${f(budget.daily)}`, `Limit ${f(budget.daily)}`) } } : {}),
           }} />
-          <p className="note"><Link to="/settings/budget">{tr('Đổi hạn mức chi phí', 'Change cost limits')}</Link></p>
+          <p className="note"><Link to="/settings/budget">{tr('Đổi hạn mức', 'Change limits')}</Link></p>
         </section>
         <section className="panel span-4" aria-labelledby="h-tok">
           <header><h2 id="h-tok">{tr('Chi phí theo project', 'Spend by project')}</h2><span className="meta">{tr('14 ngày', '14 days')}</span></header>
