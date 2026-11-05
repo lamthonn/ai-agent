@@ -1,0 +1,755 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI Agent Platform</title>
+<style>
+:root{
+  --bg:#f6f7f9; --surface:#ffffff; --surface-2:#f0f2f5; --border:#e2e5ea;
+  --text:#1b1f24; --muted:#5d6672; --accent:#3b5bdb; --accent-soft:#e7ecfd;
+  --ok:#2b8a3e; --ok-soft:#e3f4e6; --warn:#b26a00; --warn-soft:#fdf0d9;
+  --err:#c92a2a; --err-soft:#fbe4e4; --run:#1971c2; --run-soft:#e0eefb;
+  --code-bg:#0f1720; --code-text:#d6dee8;
+  --shadow:0 1px 2px rgba(0,0,0,.05),0 4px 16px rgba(0,0,0,.05);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0f1115; --surface:#171a20; --surface-2:#1f232b; --border:#2c313b;
+    --text:#e6e9ee; --muted:#9aa3af; --accent:#7b93ff; --accent-soft:#1f2747;
+    --ok:#69db7c; --ok-soft:#163020; --warn:#ffc04d; --warn-soft:#3a2c10;
+    --err:#ff8787; --err-soft:#3b1a1a; --run:#74c0fc; --run-soft:#13283d;
+    --code-bg:#0a0d12; --code-text:#d6dee8; --shadow:none;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0f1115; --surface:#171a20; --surface-2:#1f232b; --border:#2c313b;
+  --text:#e6e9ee; --muted:#9aa3af; --accent:#7b93ff; --accent-soft:#1f2747;
+  --ok:#69db7c; --ok-soft:#163020; --warn:#ffc04d; --warn-soft:#3a2c10;
+  --err:#ff8787; --err-soft:#3b1a1a; --run:#74c0fc; --run-soft:#13283d;
+  --code-bg:#0a0d12; --code-text:#d6dee8; --shadow:none;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--text);font:15px/1.6 system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif}
+a{color:var(--accent)}
+code,pre,.mono{font-family:ui-monospace,SFMono-Regular,Consolas,"Liberation Mono",monospace}
+code{font-size:.88em;background:var(--surface-2);padding:1px 5px;border-radius:4px}
+.wrap{max-width:1120px;margin:0 auto;padding:0 16px}
+
+/* top nav */
+.topnav{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(8px);border-bottom:1px solid var(--border)}
+.topnav .wrap{display:flex;gap:4px;align-items:center;overflow-x:auto;white-space:nowrap;padding-top:8px;padding-bottom:8px}
+.topnav a{color:var(--muted);text-decoration:none;font-size:13.5px;padding:6px 10px;border-radius:6px}
+.topnav a:hover{background:var(--surface-2);color:var(--text)}
+.topnav .brand{font-weight:650;color:var(--text);margin-right:8px}
+.themebtn{margin-left:auto;border:1px solid var(--border);background:var(--surface);color:var(--text);border-radius:6px;padding:5px 10px;cursor:pointer;font-size:13px}
+
+header.hero{padding:48px 0 28px}
+.eyebrow{font-size:12.5px;text-transform:uppercase;letter-spacing:.08em;color:var(--accent);font-weight:600}
+h1{font-size:clamp(26px,4vw,38px);line-height:1.2;margin:8px 0 12px;letter-spacing:-.01em}
+.lead{font-size:17px;color:var(--muted);max-width:780px}
+.meta{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}
+.chip{font-size:12.5px;border:1px solid var(--border);background:var(--surface);border-radius:999px;padding:3px 10px;color:var(--muted)}
+
+section{padding:28px 0;border-top:1px solid var(--border)}
+h2{font-size:23px;margin:0 0 6px;letter-spacing:-.005em}
+h2 .num{color:var(--accent);margin-right:8px}
+h3{font-size:17px;margin:22px 0 8px}
+.sub{color:var(--muted);margin:0 0 18px}
+
+.grid{display:grid;gap:14px}
+.g2{grid-template-columns:repeat(auto-fit,minmax(280px,1fr))}
+.g3{grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px 18px;box-shadow:var(--shadow)}
+.card h4{margin:0 0 6px;font-size:15px}
+.card p{margin:0;color:var(--muted);font-size:14px}
+.card .tag{display:inline-block;font-size:11.5px;font-weight:600;padding:1px 8px;border-radius:999px;margin-bottom:8px}
+.t-ok{background:var(--ok-soft);color:var(--ok)} .t-warn{background:var(--warn-soft);color:var(--warn)}
+.t-err{background:var(--err-soft);color:var(--err)} .t-run{background:var(--run-soft);color:var(--run)}
+.t-acc{background:var(--accent-soft);color:var(--accent)}
+
+.callout{border-left:3px solid var(--accent);background:var(--accent-soft);padding:12px 16px;border-radius:0 8px 8px 0;margin:16px 0}
+.callout.warn{border-color:var(--warn);background:var(--warn-soft)}
+
+table.tbl{width:100%;border-collapse:collapse;font-size:14px;background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden}
+.tbl th,.tbl td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--border);vertical-align:top}
+.tbl th{background:var(--surface-2);font-weight:600;font-size:13px;color:var(--muted)}
+.tbl tr:last-child td{border-bottom:none}
+.scrollx{overflow-x:auto;-webkit-overflow-scrolling:touch}
+
+pre.code{background:var(--code-bg);color:var(--code-text);padding:14px 16px;border-radius:10px;overflow-x:auto;font-size:13px;line-height:1.55;margin:0}
+
+/* architecture */
+.arch{display:flex;flex-direction:column;align-items:stretch;gap:0}
+.layer{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px 14px}
+.layer .lt{font-weight:650;font-size:14px;margin-bottom:8px;display:flex;gap:8px;align-items:center}
+.layer .lt small{font-weight:400;color:var(--muted)}
+.pills{display:flex;flex-wrap:wrap;gap:6px}
+.pill{font-size:12.5px;background:var(--surface-2);border:1px solid var(--border);border-radius:6px;padding:3px 9px}
+.arrow{text-align:center;color:var(--muted);font-size:18px;line-height:1;padding:4px 0}
+.layer.l1{border-top:3px solid #7048e8}.layer.l2{border-top:3px solid var(--accent)}
+.layer.l3{border-top:3px solid var(--run)}.layer.l4{border-top:3px solid var(--ok)}
+
+/* gantt */
+.gantt{display:grid;grid-template-columns:170px repeat(10,minmax(44px,1fr));font-size:12.5px;min-width:700px}
+.gantt .h{color:var(--muted);text-align:center;padding:4px 0;border-bottom:1px solid var(--border)}
+.gantt .lbl{padding:8px 8px 8px 0;font-weight:500;border-bottom:1px dashed var(--border)}
+.gantt .cell{border-bottom:1px dashed var(--border);border-left:1px solid var(--border);position:relative;height:38px}
+.bar{position:absolute;top:8px;height:22px;border-radius:5px;font-size:11.5px;color:#fff;padding:2px 8px;white-space:nowrap;overflow:hidden;font-weight:600}
+
+/* pipeline steps */
+.steps{counter-reset:s;display:grid;gap:8px}
+.step{display:grid;grid-template-columns:36px 1fr auto;gap:12px;align-items:start;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px 14px}
+.step .n{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;font-weight:700;font-size:13px;background:var(--accent-soft);color:var(--accent)}
+.step.det .n{background:var(--surface-2);color:var(--muted)}
+.step b{font-size:14.5px}
+.step div p{margin:2px 0 0;color:var(--muted);font-size:13.5px}
+.step .who{font-size:11.5px;white-space:nowrap}
+
+/* ============ MOCKUP ============ */
+.browser{border:1px solid var(--border);border-radius:12px;overflow:hidden;background:var(--surface);box-shadow:0 10px 40px rgba(0,0,0,.08)}
+.bbar{display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--surface-2);border-bottom:1px solid var(--border)}
+.dots span{display:inline-block;width:11px;height:11px;border-radius:50%;margin-right:5px;background:#ff5f57}
+.dots span:nth-child(2){background:#febc2e}.dots span:nth-child(3){background:#28c840}
+.url{flex:1;background:var(--surface);border:1px solid var(--border);border-radius:6px;font-size:12.5px;color:var(--muted);padding:3px 10px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.app{display:grid;grid-template-columns:196px 1fr;min-height:600px}
+.side{background:#141826;color:#c5cbe0;padding:14px 10px;font-size:13.5px}
+.side .logo{color:#fff;font-weight:700;padding:4px 10px 16px;display:flex;gap:8px;align-items:center}
+.side .logo i{width:22px;height:22px;border-radius:6px;background:linear-gradient(135deg,#7b93ff,#b197fc);display:inline-block}
+.side button{display:flex;width:100%;align-items:center;gap:10px;background:none;border:0;color:inherit;text-align:left;padding:8px 10px;border-radius:7px;cursor:pointer;font:inherit}
+.side button:hover{background:rgba(255,255,255,.06)}
+.side button.on{background:#2a3352;color:#fff}
+.side .ic{width:16px;text-align:center;opacity:.85}
+.side .badge{margin-left:auto;background:#e8590c;color:#fff;font-size:11px;border-radius:999px;padding:0 7px}
+.main{background:var(--bg);padding:18px;min-width:0}
+.screen{display:none}.screen.on{display:block}
+.ptitle{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+.ptitle h3{margin:0;font-size:18px}
+.ptitle .sp{flex:1}
+.btn{border:1px solid var(--border);background:var(--surface);color:var(--text);border-radius:7px;padding:6px 12px;font-size:13px;cursor:pointer;font:inherit;font-size:13px}
+.btn.pri{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.ok{background:var(--ok);border-color:var(--ok);color:#fff}
+.btn.danger{color:var(--err);border-color:color-mix(in srgb,var(--err) 40%,var(--border))}
+.st{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;padding:1px 9px;border-radius:999px}
+.st::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+.st.run::before{animation:pulse 1.2s infinite}
+@keyframes pulse{50%{opacity:.25}}
+
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:14px}
+.kpi{background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:12px 14px}
+.kpi .k{font-size:12px;color:var(--muted)}
+.kpi .v{font-size:24px;font-weight:700;letter-spacing:-.01em;margin-top:2px}
+.kpi .d{font-size:11.5px;margin-top:2px}
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:12px 14px;min-width:0}
+.panel .pt{font-weight:600;font-size:13.5px;margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.row2{display:grid;grid-template-columns:1.6fr 1fr;gap:10px}
+.chart{display:flex;align-items:flex-end;gap:10px;height:150px;padding-top:8px;border-bottom:1px solid var(--border)}
+.chart .col{flex:1;display:flex;flex-direction:column-reverse;gap:2px;height:100%;justify-content:flex-start}
+.chart .col i{display:block;border-radius:3px 3px 0 0}
+.chart .col i.s{background:var(--ok)}.chart .col i.f{background:var(--err);border-radius:3px}
+.xl{display:flex;gap:10px;font-size:11px;color:var(--muted);margin-top:4px}.xl span{flex:1;text-align:center}
+.legend{display:flex;gap:14px;font-size:12px;color:var(--muted);margin-top:8px}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+.mt{width:100%;border-collapse:collapse;font-size:13px}
+.mt th{color:var(--muted);font-weight:500;text-align:left;padding:7px 8px;border-bottom:1px solid var(--border);font-size:12px}
+.mt td{padding:8px;border-bottom:1px solid var(--border);white-space:nowrap}
+.mt tr:last-child td{border-bottom:0}
+.mt tr.click{cursor:pointer}.mt tr.click:hover td{background:var(--surface-2)}
+.wlist{display:flex;flex-direction:column;gap:8px;font-size:13px}
+.wlist .w{display:flex;align-items:center;gap:8px}
+.meter{flex:1;height:6px;background:var(--surface-2);border-radius:3px;overflow:hidden}
+.meter i{display:block;height:100%;background:var(--accent)}
+
+/* job detail */
+.jd{display:grid;grid-template-columns:250px 1fr;gap:10px}
+.tl{list-style:none;margin:0;padding:0;font-size:13px}
+.tl li{display:grid;grid-template-columns:20px 1fr auto;gap:8px;padding:7px 4px;border-radius:6px;align-items:center}
+.tl li .dot{width:14px;height:14px;border-radius:50%;border:2px solid var(--border);margin-left:2px}
+.tl li.done .dot{background:var(--ok);border-color:var(--ok)}
+.tl li.cur{background:var(--run-soft)}
+.tl li.cur .dot{border-color:var(--run);border-top-color:transparent;animation:spin 1s linear infinite}
+.tl li.wait{color:var(--muted)}
+.tl li .t{font-size:11.5px;color:var(--muted)}
+@keyframes spin{to{transform:rotate(360deg)}}
+.tabs{display:flex;gap:2px;border-bottom:1px solid var(--border);margin:-4px 0 10px;overflow-x:auto}
+.tabs button{background:none;border:0;border-bottom:2px solid transparent;padding:7px 12px;font:inherit;font-size:13px;color:var(--muted);cursor:pointer;white-space:nowrap}
+.tabs button.on{color:var(--accent);border-color:var(--accent);font-weight:600}
+.tabp{display:none}.tabp.on{display:block}
+.log{background:var(--code-bg);color:var(--code-text);border-radius:8px;padding:10px 12px;height:300px;overflow:auto;font-size:12px;line-height:1.6}
+.log .ts{color:#6b7787}.log .i{color:#74c0fc}.log .w{color:#ffd43b}.log .e{color:#ff8787}.log .o{color:#8ce99a}.log .tool{color:#d0bfff}
+.diff{background:var(--code-bg);color:var(--code-text);border-radius:8px;font-size:12px;line-height:1.55;overflow:auto;max-height:300px}
+.diff .fh{background:#1c2533;color:#a5b4c8;padding:6px 12px;font-weight:600}
+.diff div.l{padding:0 12px;white-space:pre}
+.diff .a{background:rgba(64,192,87,.15);color:#8ce99a}.diff .r{background:rgba(250,82,82,.15);color:#ffa8a8}.diff .hh{color:#74c0fc}
+.approval{display:flex;gap:12px;align-items:center;flex-wrap:wrap;background:var(--warn-soft);border:1px solid color-mix(in srgb,var(--warn) 35%,transparent);border-radius:9px;padding:10px 14px;margin-bottom:10px;font-size:13.5px}
+.approval .sp{flex:1;min-width:180px}
+.costline{display:flex;gap:16px;flex-wrap:wrap;font-size:12.5px;color:var(--muted);margin-bottom:10px}
+.costline b{color:var(--text)}
+
+/* builder */
+.builder{display:grid;grid-template-columns:150px 1fr 220px;gap:10px;height:470px}
+.palette{display:flex;flex-direction:column;gap:6px;font-size:12.5px;overflow:auto}
+.palette .pn{border:1px solid var(--border);background:var(--surface);border-radius:7px;padding:6px 9px;cursor:grab;display:flex;gap:7px;align-items:center}
+.palette .pn i{width:8px;height:8px;border-radius:2px;display:inline-block}
+.canvas{position:relative;background:var(--surface);border:1px solid var(--border);border-radius:9px;overflow:auto;background-image:radial-gradient(var(--border) 1px,transparent 1px);background-size:16px 16px}
+.cv-inner{position:relative;width:640px;height:520px}
+.cv-inner svg{position:absolute;inset:0}
+.node{position:absolute;width:128px;background:var(--surface);border:1.5px solid var(--border);border-radius:8px;padding:6px 9px;font-size:12px;cursor:pointer;box-shadow:var(--shadow)}
+.node .ty{font-size:10px;text-transform:uppercase;letter-spacing:.06em;font-weight:700}
+.node .nm{font-weight:600}
+.node.sel{outline:2px solid var(--accent);outline-offset:1px}
+.node.s-done{border-color:var(--ok)}.node.s-run{border-color:var(--run)}
+.node .ns{position:absolute;top:-7px;right:-7px;width:14px;height:14px;border-radius:50%;border:2px solid var(--surface)}
+.node.cond{border-style:dashed}
+.props{font-size:12.5px;overflow:auto}
+.props label{display:block;color:var(--muted);font-size:11.5px;margin:9px 0 3px}
+.props .f{border:1px solid var(--border);background:var(--surface-2);border-radius:6px;padding:5px 8px;font-size:12.5px;min-height:29px;word-break:break-word}
+.props textarea.f{width:100%;font:inherit;color:inherit;resize:vertical;min-height:70px}
+
+/* form */
+.form{display:grid;grid-template-columns:1fr 1fr;gap:12px 16px;max-width:760px}
+.form .full{grid-column:1/-1}
+.form label{display:block;font-size:12.5px;color:var(--muted);margin-bottom:4px}
+.form .in{width:100%;border:1px solid var(--border);background:var(--surface);color:var(--text);border-radius:7px;padding:7px 10px;font:inherit;font-size:13.5px}
+.drop{border:1.5px dashed var(--border);border-radius:9px;padding:18px;text-align:center;color:var(--muted);font-size:13px;background:var(--surface)}
+.toggle{display:flex;align-items:center;gap:8px;font-size:13.5px}
+.sw{width:34px;height:19px;border-radius:999px;background:var(--accent);position:relative;flex:none}
+.sw::after{content:"";position:absolute;right:2px;top:2px;width:15px;height:15px;border-radius:50%;background:#fff}
+.sw.off{background:var(--border)}.sw.off::after{right:auto;left:2px}
+
+.caption{font-size:13px;color:var(--muted);margin-top:10px}
+footer{padding:28px 0 48px;color:var(--muted);font-size:13px;border-top:1px solid var(--border)}
+
+@media (max-width:860px){
+  .app{grid-template-columns:1fr}
+  .side{display:flex;overflow-x:auto;gap:4px;padding:8px}
+  .side .logo{display:none}
+  .side button{width:auto;white-space:nowrap}
+  .row2,.jd{grid-template-columns:1fr}
+  .builder{grid-template-columns:1fr;height:auto}
+  .palette{flex-direction:row;flex-wrap:wrap}
+  .canvas{height:380px}
+  .form{grid-template-columns:1fr}
+  .step{grid-template-columns:30px 1fr}
+  .step .who{grid-column:2}
+}
+</style>
+</head>
+<body>
+
+<nav class="topnav"><div class="wrap">
+  <span class="brand">AI Agent Platform</span>
+  <a href="#tomtat">Tóm tắt</a>
+  <a href="#kientruc">Kiến trúc</a>
+  <a href="#gopy">Góp ý</a>
+  <a href="#lotrinh">Lộ trình</a>
+  <a href="#phase1">Phase 1</a>
+  <a href="#phases">Phase 2–6</a>
+  <a href="#mockup">Mockup</a>
+  <a href="#rui-ro">Rủi ro</a>
+  <a href="#tieptheo">Bước tiếp</a>
+  <button class="themebtn" id="themeBtn" type="button">◐ Giao diện</button>
+</div></nav>
+
+<div class="wrap">
+<header class="hero">
+  <div class="eyebrow">Báo cáo đề xuất &amp; kế hoạch triển khai</div>
+  <h1>AI Agent Engineering Platform</h1>
+  <p class="lead">Nền tảng AI Agent nhận tài liệu yêu cầu, tự phân tích codebase, lập kế hoạch, viết code, build, test, tự sửa lỗi và báo cáo — được quản lý qua trang quản trị có workflow kéo thả, approval và theo dõi realtime.</p>
+  <div class="meta">
+    <span class="chip">Ngày lập: 04/11/2026</span>
+    <span class="chip">Nguồn: ai-agent-platform-roadmap.md</span>
+    <span class="chip">Thời lượng ước tính: ~10 tuần cho MVP đầy đủ</span>
+  </div>
+</header>
+
+<!-- 1 -->
+<section id="tomtat">
+  <h2><span class="num">01</span>Tóm tắt ý tưởng</h2>
+  <p class="sub">Ba lớp tách biệt, một nguyên tắc xuyên suốt: <b>agent phải làm được việc thật trước khi xây nền tảng quanh nó.</b></p>
+  <div class="grid g3">
+    <div class="card"><span class="tag t-acc">Mục tiêu ngắn hạn</span><h4>Coding Agent MVP</h4><p>Một lệnh CLI nhận repo + requirement, tạo branch riêng, code, build/test, tự fix tối đa 3 vòng, xuất diff và báo cáo Markdown.</p></div>
+    <div class="card"><span class="tag t-run">Mục tiêu dài hạn</span><h4>Nền tảng quản trị</h4><p>Quản lý nhiều project, job, agent, prompt; thiết kế workflow kéo thả; theo dõi log realtime; duyệt kế hoạch / merge.</p></div>
+    <div class="card"><span class="tag t-ok">Nguyên tắc điều khiển</span><h4>Engine điều phối, LLM thực thi</h4><p>Workflow Engine quyết định luồng; AI chỉ làm việc trong từng node → dễ kiểm soát, debug và tính chi phí.</p></div>
+  </div>
+</section>
+
+<!-- 2 -->
+<section id="kientruc">
+  <h2><span class="num">02</span>Kiến trúc tổng thể</h2>
+  <p class="sub">Luồng từ trên xuống: giao diện quản lý → engine điều phối → agent worker → môi trường thực thi cô lập.</p>
+  <div class="arch">
+    <div class="layer l1"><div class="lt">Management Platform <small>React + Ant Design · React Flow · SignalR</small></div>
+      <div class="pills"><span class="pill">Dashboard</span><span class="pill">Project Manager</span><span class="pill">Job Manager</span><span class="pill">Workflow Builder</span><span class="pill">Agent Management</span><span class="pill">Monitoring</span><span class="pill">Approval</span></div></div>
+    <div class="arrow">↓ REST API / SignalR</div>
+    <div class="layer l2"><div class="lt">Agent Orchestration Engine <small>ASP.NET Core · PostgreSQL · (Temporal hoặc state machine tự viết)</small></div>
+      <div class="pills"><span class="pill">Workflow State Machine</span><span class="pill">Scheduler / Queue</span><span class="pill">Retry &amp; Approval</span><span class="pill">Agent Dispatcher</span><span class="pill">Version hoá workflow</span></div></div>
+    <div class="arrow">↓ job-file JSON / event stream JSONL</div>
+    <div class="layer l3"><div class="lt">Agent Runtime / Workers <small>Python · Claude Agent SDK</small></div>
+      <div class="pills"><span class="pill">Requirement Agent</span><span class="pill">Architect / Planner</span><span class="pill">Coding Agent</span><span class="pill">Testing Agent</span><span class="pill">Review Agent</span><span class="pill">Fix Agent</span><span class="pill">Permission hooks</span></div></div>
+    <div class="arrow">↓</div>
+    <div class="layer l4"><div class="lt">Execution Environment <small>git worktree → Docker sandbox</small></div>
+      <div class="pills"><span class="pill">Workspace riêng mỗi job</span><span class="pill">Git branch / diff</span><span class="pill">Build &amp; Test runner</span><span class="pill">Artifacts / Reports</span></div></div>
+  </div>
+</section>
+
+<!-- 3 -->
+<section id="gopy">
+  <h2><span class="num">03</span>Đánh giá &amp; điều chỉnh đề xuất</h2>
+  <p class="sub">Roadmap gốc có hướng đi đúng. Dưới đây là các điều chỉnh nhằm giảm rủi ro và tránh phải viết lại ở phase sau.</p>
+  <div class="grid g2">
+    <div class="card"><h4>1. Dùng <code>git worktree</code> cho mỗi job</h4><p>Thay vì checkout branch trong repo gốc. Không đụng working tree của developer, nhiều job chạy song song không xung đột — ngay cả khi chưa có Docker.</p></div>
+    <div class="card"><h4>2. Build/Test do Python chạy</h4><p>Exit code thật từ subprocess mới đáng tin. Agent chỉ đọc log lỗi để sửa, không tự báo "đã pass".</p></div>
+    <div class="card"><h4>3. Bộ task mẫu (eval) ngay từ Phase 1</h4><p>5–10 task chuẩn để đo tỉ lệ thành công, số vòng fix, chi phí. Không đo được thì không biết agent đã "tin cậy" chưa.</p></div>
+    <div class="card"><h4>4. Lưu trạng thái job dạng file từ đầu</h4><p><code>.ai-jobs/&lt;id&gt;/state.json</code> + <code>events.jsonl</code> ánh xạ thẳng sang bảng <code>jobs</code>, <code>execution_logs</code>, <code>artifacts</code>; hỗ trợ resume.</p></div>
+    <div class="card"><h4>5. Chốt giao tiếp .NET ↔ Python sớm</h4><p>CLI + job-file JSON vào, event JSONL ra. Phase 3 chỉ cần "bọc" runtime, không viết lại.</p></div>
+    <div class="card"><h4>6. Xác thực bằng API key</h4><p>Worker dùng <code>ANTHROPIC_API_KEY</code>. Đăng nhập Claude Pro chỉ dùng thử cá nhân — đúng cảnh báo trong tài liệu gốc.</p></div>
+  </div>
+  <div class="callout warn"><b>Về thời gian:</b> lịch 6 tuần của bản gốc khá lạc quan. Phase 1 thực tế cần ~2 tuần để ổn định vì phần tinh chỉnh prompt và fix loop chiếm nhiều thời gian nhất. Lộ trình bên dưới đã điều chỉnh thành ~10 tuần.</div>
+  <div class="callout"><b>Môi trường hiện tại:</b> Python 3.11, Git 2.43, .NET 10, Claude Code 2.1 đã có. <b>Docker chưa cài</b> — cần trước Phase 5.</div>
+</section>
+
+<!-- 4 -->
+<section id="lotrinh">
+  <h2><span class="num">04</span>Lộ trình điều chỉnh</h2>
+  <p class="sub">Tuần là ước lượng mục tiêu, không phải cam kết. Mỗi phase có tiêu chí "xong" rõ ràng trước khi sang phase sau.</p>
+  <div class="scrollx card" style="padding:12px 14px">
+    <div class="gantt">
+      <div class="h"></div><div class="h">T1</div><div class="h">T2</div><div class="h">T3</div><div class="h">T4</div><div class="h">T5</div><div class="h">T6</div><div class="h">T7</div><div class="h">T8</div><div class="h">T9</div><div class="h">T10</div>
+      <div class="lbl">P1 · Coding Agent MVP</div><div class="cell"><span class="bar" style="left:4px;width:calc(200% - 8px);background:#7048e8">Runtime + eval</span></div><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div>
+      <div class="lbl">P2 · Multi-Agent</div><div class="cell"></div><div class="cell"></div><div class="cell"><span class="bar" style="left:4px;width:calc(100% - 8px);background:#3b5bdb">Roles</span></div><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div>
+      <div class="lbl">P3 · Backend</div><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"><span class="bar" style="left:4px;width:calc(200% - 8px);background:#1971c2">API + DB + SignalR</span></div><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div>
+      <div class="lbl">P4 · Frontend + Builder</div><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"><span class="bar" style="left:4px;width:calc(200% - 8px);background:#0c8599">Jobs UI → Builder</span></div><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div>
+      <div class="lbl">P5 · Docker Worker</div><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"><span class="bar" style="left:4px;width:calc(200% - 8px);background:#2b8a3e">Sandbox + worker</span></div><div class="cell"></div><div class="cell"></div>
+      <div class="lbl">P6 · Monitoring &amp; Eval</div><div class="cell"></div><div class="cell"></div><div class="cell"><span class="bar" style="left:4px;width:calc(800% - 8px);background:#868e96">Eval suite chạy liên tục · dashboard từ T6</span></div><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div>
+    </div>
+  </div>
+</section>
+
+<!-- 5 -->
+<section id="phase1">
+  <h2><span class="num">05</span>Phase 1 — Coding Agent MVP (chi tiết)</h2>
+  <p class="sub">Lệnh mục tiêu: <code>python main.py run --repo ./QLKho --requirement ./requirements/task.md</code></p>
+
+  <h3>Pipeline thực thi</h3>
+  <div class="steps">
+    <div class="step det"><span class="n">1</span><div><b>Preflight</b><p>Repo hợp lệ, working tree sạch, lệnh build/test tồn tại.</p></div><span class="tag t-warn who">Python</span></div>
+    <div class="step det"><span class="n">2</span><div><b>Workspace</b><p><code>git worktree add</code> → branch <code>ai/&lt;job-id&gt;</code>, thư mục tách biệt.</p></div><span class="tag t-warn who">Python</span></div>
+    <div class="step"><span class="n">3</span><div><b>Requirement Analyzer</b><p>JSON: mục tiêu, phạm vi, tiêu chí nghiệm thu, câu hỏi chưa rõ.</p></div><span class="tag t-acc who">Agent · Read</span></div>
+    <div class="step"><span class="n">4</span><div><b>Codebase Analyzer</b><p>Ngôn ngữ, framework, file liên quan, convention.</p></div><span class="tag t-acc who">Agent · Read/Glob/Grep</span></div>
+    <div class="step"><span class="n">5</span><div><b>Planner</b><p>Plan + danh sách file sẽ sửa + rủi ro. Cờ <code>--approve-plan</code> dừng chờ duyệt.</p></div><span class="tag t-acc who">Agent · Read-only</span></div>
+    <div class="step"><span class="n">6</span><div><b>Coder</b><p>Sửa code, thêm test theo plan, trong phạm vi worktree.</p></div><span class="tag t-acc who">Agent · Read/Write/Edit/Bash*</span></div>
+    <div class="step det"><span class="n">7</span><div><b>Build &amp; Test</b><p>Subprocess có timeout; lưu stdout, stderr, exit code.</p></div><span class="tag t-warn who">Python</span></div>
+    <div class="step"><span class="n">8</span><div><b>Fix Loop (≤ N lần)</b><p>Đưa log lỗi cho Fixer → quay lại bước 7.</p></div><span class="tag t-acc who">Agent · như Coder</span></div>
+    <div class="step det"><span class="n">9</span><div><b>Report</b><p><code>diff.patch</code> so với base, tổng kết, chi phí, lỗi tồn đọng.</p></div><span class="tag t-warn who">Python</span></div>
+  </div>
+  <p class="caption">* Bash bị giới hạn bởi permission hook: chặn ghi ngoài worktree, chặn <code>git push</code>, <code>rm -rf</code>, <code>curl</code>, cài package (allowlist cấu hình được).</p>
+
+  <h3>Cấu trúc mã nguồn</h3>
+  <div class="grid g2">
+<pre class="code">agent-runtime/
+├── pyproject.toml
+├── main.py              # CLI: run / resume / status
+├── runtime/
+│   ├── config.py        # JobConfig (pydantic) ← YAML + CLI
+│   ├── job.py           # JobContext, state.json
+│   ├── pipeline.py      # state machine, resume
+│   └── events.py        # events.jsonl
+├── agents/
+│   ├── base.py          # bọc Claude Agent SDK
+│   ├── requirement.py  analyzer.py
+│   ├── planner.py  coder.py  fixer.py
+│   └── prompts/*.md
+├── tools/
+│   ├── git_tool.py      # preflight, worktree, diff
+│   └── runner.py        # build/test subprocess
+├── policy/permissions.py
+├── report/report.py
+└── tests/</pre>
+<pre class="code">.ai-jobs/JOB-0142/
+├── state.json          # bước hiện tại, status
+├── events.jsonl        # log có cấu trúc
+├── requirement.json
+├── analysis.md
+├── plan.json / plan.md
+├── build-1.log  test-1.log
+├── build-2.log  test-2.log
+├── diff.patch
+└── report.md
+
+<span style="color:#8ce99a"># Giới hạn mỗi job</span>
+max_turns_per_step: 40
+max_budget_usd:     3.00
+job_timeout_min:    45
+max_fix_attempts:   3</pre>
+  </div>
+
+  <h3>Kế hoạch theo ngày</h3>
+  <div class="scrollx"><table class="tbl">
+    <tr><th style="width:90px">Ngày</th><th>Công việc</th><th>Kết quả kiểm chứng</th></tr>
+    <tr><td>1</td><td>Tạo project, cài SDK, script "hello agent" đọc thử một repo</td><td>Xác minh auth, API, chi phí thực tế</td></tr>
+    <tr><td>2</td><td><code>config</code>, <code>job</code>, <code>events</code>, <code>git_tool</code> (worktree, diff)</td><td>Unit test pass, branch gốc không đổi</td></tr>
+    <tr><td>3</td><td><code>runner</code> + <code>policy/permissions</code></td><td>Test chặn lệnh nguy hiểm &amp; ghi ngoài worktree</td></tr>
+    <tr><td>4–5</td><td>Requirement Analyzer, Codebase Analyzer, Planner (output JSON có validate)</td><td>Plan hợp lý trên 3 requirement mẫu</td></tr>
+    <tr><td>6–7</td><td>Coder + Fix Loop</td><td>Ít nhất 1 task end-to-end build/test pass</td></tr>
+    <tr><td>8</td><td>Report + resume</td><td>Kill giữa chừng → resume chạy tiếp đúng bước</td></tr>
+    <tr><td>9–10</td><td>Chạy bộ 5–10 task mẫu (.NET + Python), tinh chỉnh prompt</td><td>Bảng chỉ số: tỉ lệ pass, số vòng fix, $/job</td></tr>
+  </table></div>
+  <div class="callout"><b>Definition of Done:</b> đạt toàn bộ checklist mục 8.4 của roadmap gốc <b>và</b> ≥ 60% task mẫu build + test pass mà không cần người sửa.</div>
+</section>
+
+<!-- 6 -->
+<section id="phases">
+  <h2><span class="num">06</span>Phase 2 – 6</h2>
+  <div class="grid g2">
+    <div class="card"><span class="tag t-acc">Phase 2 · ~1 tuần</span><h4>Multi-Agent</h4><p>Tách vai trò (subagent hoặc lời gọi riêng) với system prompt và tool riêng. Thêm Review Agent chỉ đọc → <code>{pass, issues[]}</code> → Fixer → Test. Chuyển pipeline cứng thành <b>workflow JSON</b> do Python engine đọc. Chạy lại eval; chỉ giữ multi-agent nếu tốt hơn.</p></div>
+    <div class="card"><span class="tag t-run">Phase 3 · ~2 tuần</span><h4>Management Backend</h4><p>ASP.NET Core + EF Core + PostgreSQL theo schema gốc, bổ sung <code>workflow_versions</code>, cột cost/token, FK/index. Job dispatcher (hosted service) gọi runtime và đọc event vào DB. API Projects/Jobs/Executions/Logs/Artifacts/Approvals, SignalR realtime. Chốt Temporal hay custom cuối phase.</p></div>
+    <div class="card"><span class="tag t-run">Phase 4 · ~2 tuần</span><h4>Frontend &amp; Workflow Builder</h4><p>React + Ant Design + React Flow. Làm Jobs list và Job Detail (timeline, log realtime, diff, Approve/Reject) <b>trước</b>, sau đó Builder: 9 loại node, panel thuộc tính, validate (Start/End, không node mồ côi, vòng lặp có giới hạn), lưu thành phiên bản mới.</p></div>
+    <div class="card"><span class="tag t-ok">Phase 5 · ~1–2 tuần</span><h4>Docker Sandbox &amp; Worker</h4><p>Image runtime (Python + SDK + CLI + toolchain .NET/Node). Mỗi job một container: không <code>--privileged</code>, giới hạn CPU/RAM/timeout, user non-root, network egress chỉ tới Anthropic API + registry. Không mount Docker socket, không đưa credential Git vào container. Concurrency theo quota API.</p></div>
+    <div class="card"><span class="tag t-warn">Phase 6 · liên tục</span><h4>Monitoring &amp; Evaluation</h4><p>Dashboard từ DB (job, tỉ lệ pass, số vòng fix, chi phí). Prometheus/Grafana cho worker. Eval suite chạy định kỳ, chấm theo tiêu chí chất lượng: đúng phạm vi, đúng convention, không làm hỏng chức năng cũ, mức độ người phải sửa lại.</p></div>
+    <div class="card"><span class="tag t-acc">Quyết định kiến trúc</span><h4>Mặc định đề xuất</h4><p>Hàng đợi: bảng DB trước, RabbitMQ khi cần scale. Orchestration: state machine tự viết đến hết Phase 3, đánh giá Temporal khi pause/resume/approval phức tạp. RAG: chưa cần. Deploy tự động: không — luôn qua approval.</p></div>
+  </div>
+</section>
+
+<!-- 7 MOCKUP -->
+<section id="mockup">
+  <h2><span class="num">07</span>Mockup giao diện demo</h2>
+  <p class="sub">Bản mô phỏng tương tác của Management Platform (Phase 4). Bấm menu bên trái để chuyển màn hình; trong Workflow Builder bấm vào node để xem thuộc tính. Dữ liệu là dữ liệu giả lập.</p>
+
+  <div class="browser">
+    <div class="bbar"><div class="dots"><span></span><span></span><span></span></div><div class="url" id="mUrl">agent-platform.local/dashboard</div></div>
+    <div class="app">
+      <aside class="side" id="mSide">
+        <div class="logo"><i></i>AgentOps</div>
+        <button class="on" data-s="dash" data-u="dashboard"><span class="ic">▦</span>Dashboard</button>
+        <button data-s="newjob" data-u="jobs/new"><span class="ic">＋</span>Tạo Job</button>
+        <button data-s="job" data-u="jobs/JOB-0142"><span class="ic">▶</span>Job Detail<span class="badge">1</span></button>
+        <button data-s="flow" data-u="workflows/ai-coding/v3"><span class="ic">⧉</span>Workflow Builder</button>
+      </aside>
+
+      <div class="main">
+        <!-- DASHBOARD -->
+        <div class="screen on" id="s-dash">
+          <div class="ptitle"><h3>Dashboard</h3><span class="sp"></span><button class="btn">7 ngày qua ▾</button><button class="btn pri" data-go="newjob">＋ Job mới</button></div>
+          <div class="kpis">
+            <div class="kpi"><div class="k">Tổng job</div><div class="v">128</div><div class="d" style="color:var(--ok)">▲ 18 so với tuần trước</div></div>
+            <div class="kpi"><div class="k">Đang chạy</div><div class="v">3</div><div class="d" style="color:var(--muted)">2 worker rảnh</div></div>
+            <div class="kpi"><div class="k">Tỉ lệ build/test pass</div><div class="v">72%</div><div class="d" style="color:var(--ok)">▲ 6 điểm</div></div>
+            <div class="kpi"><div class="k">Vòng fix TB</div><div class="v">1.4</div><div class="d" style="color:var(--muted)">tối đa 3</div></div>
+            <div class="kpi"><div class="k">Chi phí tuần</div><div class="v">$38.2</div><div class="d" style="color:var(--muted)">$0.30 / job</div></div>
+          </div>
+          <div class="row2">
+            <div class="panel"><div class="pt">Kết quả job theo ngày</div>
+              <div class="chart" id="chart"></div>
+              <div class="xl"><span>T5</span><span>T6</span><span>T7</span><span>CN</span><span>T2</span><span>T3</span><span>T4</span></div>
+              <div class="legend"><span><i style="background:var(--ok)"></i>Thành công</span><span><i style="background:var(--err)"></i>Thất bại</span></div>
+            </div>
+            <div class="panel"><div class="pt">Worker</div>
+              <div class="wlist">
+                <div class="w"><span class="mono" style="width:70px">worker-1</span><div class="meter"><i style="width:82%"></i></div><span class="st run t-run">JOB-0142</span></div>
+                <div class="w"><span class="mono" style="width:70px">worker-2</span><div class="meter"><i style="width:64%"></i></div><span class="st run t-run">JOB-0141</span></div>
+                <div class="w"><span class="mono" style="width:70px">worker-3</span><div class="meter"><i style="width:40%"></i></div><span class="st run t-run">JOB-0140</span></div>
+                <div class="w"><span class="mono" style="width:70px">worker-4</span><div class="meter"><i style="width:0"></i></div><span class="st t-ok">Rảnh</span></div>
+                <div class="w"><span class="mono" style="width:70px">worker-5</span><div class="meter"><i style="width:0"></i></div><span class="st t-ok">Rảnh</span></div>
+              </div>
+              <div class="pt" style="margin-top:16px">Chờ duyệt</div>
+              <div style="font-size:13px">1 kế hoạch đang chờ: <a href="#" data-go="job">JOB-0142</a></div>
+            </div>
+          </div>
+          <div class="panel" style="margin-top:10px"><div class="pt">Job gần đây</div>
+            <div class="scrollx"><table class="mt">
+              <tr><th>Job</th><th>Tên</th><th>Project</th><th>Trạng thái</th><th>Fix</th><th>Thời gian</th><th>Chi phí</th></tr>
+              <tr class="click" data-go="job"><td class="mono">JOB-0142</td><td>Add user management API</td><td>QLKho</td><td><span class="st run t-run">Đang chạy</span></td><td>1/3</td><td>12m</td><td>$0.41</td></tr>
+              <tr><td class="mono">JOB-0141</td><td>Export báo cáo tồn kho Excel</td><td>QLKho</td><td><span class="st run t-run">Đang chạy</span></td><td>0/3</td><td>6m</td><td>$0.18</td></tr>
+              <tr><td class="mono">JOB-0139</td><td>Sửa lỗi phân trang danh sách phiếu</td><td>QLKho</td><td><span class="st t-ok">Thành công</span></td><td>2/3</td><td>18m</td><td>$0.52</td></tr>
+              <tr><td class="mono">JOB-0138</td><td>Thêm validate form nhập hàng</td><td>Portal</td><td><span class="st t-warn">Chờ duyệt merge</span></td><td>0/3</td><td>9m</td><td>$0.22</td></tr>
+              <tr><td class="mono">JOB-0137</td><td>Nâng cấp EF Core 9</td><td>QLKho</td><td><span class="st t-err">Thất bại</span></td><td>3/3</td><td>41m</td><td>$1.87</td></tr>
+            </table></div>
+          </div>
+        </div>
+
+        <!-- NEW JOB -->
+        <div class="screen" id="s-newjob">
+          <div class="ptitle"><h3>Tạo Job mới</h3></div>
+          <div class="panel">
+            <div class="form">
+              <div><label>Tên job</label><input class="in" value="Add user management API"></div>
+              <div><label>Project / Repository</label><select class="in"><option>QLKho — git@internal:qlkho.git</option><option>Portal</option></select></div>
+              <div><label>Branch gốc</label><input class="in mono" value="develop"></div>
+              <div><label>Workflow</label><select class="in"><option>AI Coding Workflow · v3</option><option>Bugfix nhanh · v1</option></select></div>
+              <div class="full"><label>Tài liệu yêu cầu</label><div class="drop">📄 <b>user-management.md</b> (4.2 KB) — kéo thả hoặc chọn file .md / .txt / .docx / .pdf</div></div>
+              <div><label>Build command</label><input class="in mono" value="dotnet build"></div>
+              <div><label>Test command</label><input class="in mono" value="dotnet test"></div>
+              <div><label>Số vòng fix tối đa</label><input class="in" value="3"></div>
+              <div><label>Ngân sách tối đa (USD)</label><input class="in" value="3.00"></div>
+              <div class="full" style="display:flex;gap:22px;flex-wrap:wrap">
+                <span class="toggle"><span class="sw"></span>Duyệt kế hoạch trước khi coding</span>
+                <span class="toggle"><span class="sw"></span>Tự động commit trên branch job</span>
+                <span class="toggle"><span class="sw off"></span>Tự động push branch</span>
+              </div>
+              <div class="full" style="display:flex;gap:8px;justify-content:flex-end"><button class="btn">Lưu nháp</button><button class="btn pri" data-go="job">Chạy job ▶</button></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- JOB DETAIL -->
+        <div class="screen" id="s-job">
+          <div class="ptitle"><span class="mono" style="color:var(--muted)">JOB-0142</span><h3>Add user management API</h3><span class="st run t-run">Đang chạy</span><span class="sp"></span><button class="btn">⏸ Pause</button><button class="btn danger">✕ Cancel</button></div>
+          <div class="costline"><span>Project <b>QLKho</b></span><span>Branch <b class="mono">ai/JOB-0142</b></span><span>Workflow <b>v3</b></span><span>Thời gian <b id="elapsed">12:04</b></span><span>Token <b>184k</b></span><span>Chi phí <b>$0.41</b> / $3.00</span></div>
+          <div class="approval" id="appr"><span>⚠️</span><span class="sp"><b>Kế hoạch đã được duyệt</b> bởi bạn lúc 21:14 — 6 file sẽ thay đổi, 2 file test mới.</span><button class="btn">Xem plan</button></div>
+          <div class="jd">
+            <div class="panel"><div class="pt">Timeline</div>
+              <ul class="tl">
+                <li class="done"><span class="dot"></span><span>Preflight</span><span class="t">2s</span></li>
+                <li class="done"><span class="dot"></span><span>Workspace</span><span class="t">3s</span></li>
+                <li class="done"><span class="dot"></span><span>Requirement</span><span class="t">48s</span></li>
+                <li class="done"><span class="dot"></span><span>Codebase</span><span class="t">1m52</span></li>
+                <li class="done"><span class="dot"></span><span>Plan + Approval</span><span class="t">2m10</span></li>
+                <li class="done"><span class="dot"></span><span>Coding</span><span class="t">4m31</span></li>
+                <li class="done"><span class="dot" style="background:var(--err);border-color:var(--err)"></span><span>Build &amp; Test #1</span><span class="t">38s</span></li>
+                <li class="cur"><span class="dot"></span><span>Fix #1</span><span class="t">…</span></li>
+                <li class="wait"><span class="dot"></span><span>Build &amp; Test #2</span><span class="t"></span></li>
+                <li class="wait"><span class="dot"></span><span>Review</span><span class="t"></span></li>
+                <li class="wait"><span class="dot"></span><span>Report</span><span class="t"></span></li>
+              </ul>
+            </div>
+            <div class="panel">
+              <div class="tabs" id="jtabs"><button class="on" data-t="log">Log realtime</button><button data-t="diff">Git diff</button><button data-t="test">Test result</button><button data-t="report">Báo cáo</button></div>
+              <div class="tabp on" id="t-log"><div class="log mono" id="log"></div></div>
+              <div class="tabp" id="t-diff"><div class="diff mono">
+                <div class="fh">src/QLKho.Api/Controllers/UsersController.cs  <span style="color:#8ce99a">+58</span> <span style="color:#ffa8a8">−0</span></div>
+                <div class="l hh">@@ -0,0 +1,58 @@</div>
+                <div class="l a">+[ApiController]</div>
+                <div class="l a">+[Route("api/users")]</div>
+                <div class="l a">+public class UsersController : ControllerBase</div>
+                <div class="l a">+{</div>
+                <div class="l a">+    private readonly IUserService _service;</div>
+                <div class="l a">+    [HttpGet] public async Task&lt;IActionResult&gt; GetAll(</div>
+                <div class="l a">+        [FromQuery] int page = 1, [FromQuery] int size = 20)</div>
+                <div class="l a">+        =&gt; Ok(await _service.GetPagedAsync(page, size));</div>
+                <div class="fh">src/QLKho.Application/Services/UserService.cs  <span style="color:#8ce99a">+12</span> <span style="color:#ffa8a8">−3</span></div>
+                <div class="l hh">@@ -41,9 +41,18 @@ public class UserService : IUserService</div>
+                <div class="l r">-    if (dto.Email == null) throw new Exception("Email");</div>
+                <div class="l a">+    if (string.IsNullOrWhiteSpace(dto.Email))</div>
+                <div class="l a">+        throw new ValidationException("Email là bắt buộc");</div>
+                <div class="l a">+    if (await _repo.ExistsByEmailAsync(dto.Email))</div>
+                <div class="l a">+        throw new ConflictException("Email đã tồn tại");</div>
+                <div class="l">     var user = _mapper.Map&lt;User&gt;(dto);</div>
+              </div></div>
+              <div class="tabp" id="t-test">
+                <table class="mt">
+                  <tr><th>Lần</th><th>Build</th><th>Tests</th><th>Pass</th><th>Fail</th><th>Thời gian</th></tr>
+                  <tr><td>#1</td><td><span class="st t-ok">OK</span></td><td>47</td><td>45</td><td style="color:var(--err)">2</td><td>38s</td></tr>
+                  <tr><td>#2</td><td colspan="5" style="color:var(--muted)">đang chờ Fix #1…</td></tr>
+                </table>
+                <div class="log mono" style="height:auto;margin-top:10px"><span class="e">FAIL</span> UserServiceTests.Create_DuplicateEmail_ThrowsConflict
+  Expected: ConflictException  Actual: DbUpdateException
+<span class="e">FAIL</span> UsersControllerTests.GetAll_ReturnsPaged
+  Expected status 200, got 500 — IUserService not registered</div>
+              </div>
+              <div class="tabp" id="t-report"><div style="font-size:13.5px">
+                <p style="margin-top:0"><b>Báo cáo sẽ được tạo khi job hoàn tất.</b> Nội dung gồm:</p>
+                <ul style="margin:0;padding-left:18px;color:var(--muted)"><li>Yêu cầu đã xử lý &amp; tiêu chí nghiệm thu đạt/chưa đạt</li><li>Danh sách file thay đổi + <code>diff.patch</code></li><li>Kết quả build/test từng vòng</li><li>Token, chi phí, thời gian từng bước</li><li>Lỗi còn tồn tại &amp; việc cần người xử lý</li></ul>
+                <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap"><button class="btn ok" disabled style="opacity:.5">✓ Approve merge</button><button class="btn danger" disabled style="opacity:.5">Reject</button></div>
+              </div></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- BUILDER -->
+        <div class="screen" id="s-flow">
+          <div class="ptitle"><h3>AI Coding Workflow</h3><span class="chip">v3 · đã lưu</span><span class="sp"></span><button class="btn">✓ Validate</button><button class="btn">▶ Chạy thử</button><button class="btn pri">Lưu thành v4</button></div>
+          <div class="builder">
+            <div class="palette panel">
+              <div class="pt" style="margin-bottom:4px">Node</div>
+              <div class="pn"><i style="background:#868e96"></i>Start</div>
+              <div class="pn"><i style="background:#7048e8"></i>Agent</div>
+              <div class="pn"><i style="background:#e8590c"></i>Condition</div>
+              <div class="pn"><i style="background:#1971c2"></i>Command</div>
+              <div class="pn"><i style="background:#2f9e44"></i>Git</div>
+              <div class="pn"><i style="background:#0c8599"></i>Test</div>
+              <div class="pn"><i style="background:#f08c00"></i>Approval</div>
+              <div class="pn"><i style="background:#adb5bd"></i>Delay</div>
+              <div class="pn"><i style="background:#495057"></i>End</div>
+            </div>
+            <div class="canvas"><div class="cv-inner" id="cv"><svg id="edges" width="640" height="520"></svg></div></div>
+            <div class="props panel" id="props"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <p class="caption">Mockup minh hoạ bố cục và luồng thao tác; giao diện thật dùng Ant Design + React Flow.</p>
+</section>
+
+<!-- 8 -->
+<section id="rui-ro">
+  <h2><span class="num">08</span>Rủi ro chính &amp; kiểm soát</h2>
+  <div class="scrollx"><table class="tbl">
+    <tr><th>Rủi ro</th><th>Biện pháp</th><th>Áp dụng từ</th></tr>
+    <tr><td>Agent sửa ngoài phạm vi</td><td>Plan có danh sách file, hook chặn ghi ngoài worktree, review diff</td><td>Phase 1</td></tr>
+    <tr><td>Chạy lệnh nguy hiểm</td><td>PreToolUse hook + allowlist; sau đó Docker sandbox</td><td>Phase 1 → 5</td></tr>
+    <tr><td>Vòng fix vô hạn / chi phí tăng</td><td>max_fix_attempts, max_turns, budget USD, timeout job</td><td>Phase 1</td></tr>
+    <tr><td>Kết quả test "giả"</td><td>Python tự chạy build/test, chỉ tin exit code</td><td>Phase 1</td></tr>
+    <tr><td>Job bị gián đoạn</td><td>state.json + resume theo bước</td><td>Phase 1</td></tr>
+    <tr><td>Hai job xung đột</td><td>Worktree riêng → container riêng</td><td>Phase 1 → 5</td></tr>
+    <tr><td>Lộ secret</td><td>Không đưa credential vào agent; egress hạn chế</td><td>Phase 5</td></tr>
+    <tr><td>Workflow đổi làm sai job cũ</td><td>Job tham chiếu workflow_version cố định</td><td>Phase 3</td></tr>
+    <tr><td>Agent tự merge/deploy</td><td>Không cấp quyền; bắt buộc approval</td><td>Luôn luôn</td></tr>
+  </table></div>
+</section>
+
+<!-- 9 -->
+<section id="tieptheo">
+  <h2><span class="num">09</span>Bước tiếp theo</h2>
+  <div class="grid g3">
+    <div class="card"><span class="tag t-warn">Cần chuẩn bị</span><h4>Đầu vào</h4><p>API key Anthropic · một repo thử nghiệm (bản sao QLKho) · 2–3 file requirement mẫu.</p></div>
+    <div class="card"><span class="tag t-acc">Tuần 1</span><h4>Bắt đầu</h4><p>Dựng khung <code>agent-runtime/</code>, script xác minh SDK, git_tool + runner + permission policy kèm test.</p></div>
+    <div class="card"><span class="tag t-ok">Mốc kiểm tra</span><h4>Cuối tuần 2</h4><p>Demo một job end-to-end trên repo thật và bảng kết quả eval cho 5–10 task mẫu.</p></div>
+  </div>
+</section>
+</div>
+
+<footer><div class="wrap">Báo cáo được lập từ tài liệu <code>ai-agent-platform-roadmap.md</code>. Dữ liệu trong mockup là giả lập để minh hoạ.</div></footer>
+
+<script>
+(function(){
+  // theme
+  var root=document.documentElement, btn=document.getElementById('themeBtn');
+  try{var saved=localStorage.getItem('theme'); if(saved) root.setAttribute('data-theme',saved);}catch(e){}
+  btn.addEventListener('click',function(){
+    var cur=root.getAttribute('data-theme')||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');
+    var next=cur==='dark'?'light':'dark'; root.setAttribute('data-theme',next);
+    try{localStorage.setItem('theme',next);}catch(e){}
+  });
+
+  // mockup navigation
+  var side=document.getElementById('mSide'), url=document.getElementById('mUrl');
+  function go(s){
+    side.querySelectorAll('button').forEach(function(b){
+      var on=b.dataset.s===s; b.classList.toggle('on',on); if(on) url.textContent='agent-platform.local/'+b.dataset.u;
+    });
+    document.querySelectorAll('.screen').forEach(function(x){x.classList.toggle('on',x.id==='s-'+s);});
+  }
+  side.addEventListener('click',function(e){var b=e.target.closest('button'); if(b) go(b.dataset.s);});
+  document.querySelectorAll('[data-go]').forEach(function(el){el.addEventListener('click',function(e){e.preventDefault();go(el.dataset.go);});});
+
+  // chart
+  var data=[[14,4],[18,6],[9,3],[5,1],[21,7],[19,5],[16,4]], max=28, chart=document.getElementById('chart');
+  data.forEach(function(d){
+    var c=document.createElement('div'); c.className='col';
+    c.innerHTML='<i class="s" style="height:'+(d[0]/max*100)+'%" title="Thành công: '+d[0]+'"></i><i class="f" style="height:'+(d[1]/max*100)+'%" title="Thất bại: '+d[1]+'"></i>';
+    chart.appendChild(c);
+  });
+
+  // job tabs
+  var jt=document.getElementById('jtabs');
+  jt.addEventListener('click',function(e){var b=e.target.closest('button'); if(!b) return;
+    jt.querySelectorAll('button').forEach(function(x){x.classList.toggle('on',x===b);});
+    document.querySelectorAll('#s-job .tabp').forEach(function(p){p.classList.toggle('on',p.id==='t-'+b.dataset.t);});
+  });
+
+  // streaming log
+  var lines=[
+    ['i','step','Fix #1 bắt đầu — input: test-1.log (2 failed)'],
+    ['tool','tool','Read  tests/QLKho.Tests/UserServiceTests.cs'],
+    ['tool','tool','Grep  "ExistsByEmailAsync" src/'],
+    ['i','agent','Nguyên nhân 1: repository chưa có ExistsByEmailAsync → insert trùng gây DbUpdateException'],
+    ['tool','tool','Edit  src/QLKho.Infrastructure/Repositories/UserRepository.cs (+6)'],
+    ['tool','tool','Read  src/QLKho.Api/Program.cs'],
+    ['i','agent','Nguyên nhân 2: IUserService chưa được đăng ký DI'],
+    ['tool','tool','Edit  src/QLKho.Api/Program.cs (+1)'],
+    ['w','policy','Chặn: "dotnet add package Moq" — cài package không nằm trong allowlist'],
+    ['i','agent','Dùng fake repository có sẵn thay vì thêm Moq'],
+    ['o','step','Fix #1 xong — 3 file thay đổi · 21.4k token · $0.06'],
+    ['i','step','Build & Test #2 → dotnet build'],
+    ['o','run','Build succeeded. 0 Warning(s) 0 Error(s)'],
+    ['i','run','dotnet test …'],
+    ['o','run','Passed! Failed: 0, Passed: 47, Skipped: 0, Total: 47'],
+    ['i','step','Review bắt đầu (read-only)']
+  ];
+  var base=[
+    ['i','step','Build & Test #1 → dotnet build'],
+    ['o','run','Build succeeded.'],
+    ['e','run','Failed! Failed: 2, Passed: 45, Total: 47'],
+    ['w','step','Test fail → chuyển sang Fix loop (1/3)']
+  ];
+  var log=document.getElementById('log'), t0=new Date(2026,10,4,21,26,40), n=0, idx=0;
+  function pad(x){return (x<10?'0':'')+x;}
+  function add(l){
+    var t=new Date(t0.getTime()+n*4000); n++;
+    var d=document.createElement('div');
+    d.innerHTML='<span class="ts">'+pad(t.getHours())+':'+pad(t.getMinutes())+':'+pad(t.getSeconds())+'</span> <span class="'+l[0]+'">['+l[1]+']</span> '+l[2].replace(/</g,'&lt;');
+    log.appendChild(d); log.scrollTop=log.scrollHeight;
+  }
+  base.forEach(add);
+  setInterval(function(){
+    if(idx>=lines.length){log.innerHTML='';n=0;idx=0;base.forEach(add);return;}
+    add(lines[idx++]);
+  },1600);
+  var sec=12*60+4, el=document.getElementById('elapsed');
+  setInterval(function(){sec++;el.textContent=Math.floor(sec/60)+':'+pad(sec%60);},1000);
+
+  // workflow builder
+  var C={start:'#868e96',agent:'#7048e8',condition:'#e8590c',command:'#1971c2',test:'#0c8599',approval:'#f08c00',git:'#2f9e44',end:'#495057'};
+  var nodes=[
+    {id:'start',t:'start',n:'Start',x:250,y:12,s:'done'},
+    {id:'req',t:'agent',n:'Requirement Agent',x:250,y:72,s:'done',p:{agent:'requirement-analyzer',tools:'Read',model:'claude-sonnet-5-5',max_turns:'20',prompt:'Phân tích tài liệu yêu cầu. Trả JSON: goals, scope, acceptance_criteria, open_questions.'}},
+    {id:'plan',t:'agent',n:'Architect / Planner',x:250,y:132,s:'done',p:{agent:'architect',tools:'Read, Glob, Grep',model:'claude-opus-5-5',max_turns:'40',prompt:'Phân tích codebase và lập kế hoạch: danh sách file thay đổi, các bước, rủi ro.'}},
+    {id:'appr',t:'approval',n:'Duyệt kế hoạch',x:250,y:192,s:'done',p:{approvers:'Tech lead',timeout:'24h',on_reject:'end'}},
+    {id:'code',t:'agent',n:'Coding Agent',x:250,y:252,s:'done',p:{agent:'coder',tools:'Read, Write, Edit, Glob, Grep, Bash*',model:'claude-opus-5-5',max_turns:'60',prompt:'Thực hiện kế hoạch đã duyệt. Tuân thủ convention. Viết/cập nhật test.'}},
+    {id:'test',t:'test',n:'Build & Test',x:250,y:312,s:'run',p:{build:'dotnet build',test:'dotnet test',timeout:'15m'}},
+    {id:'cond',t:'condition',n:'Pass?',x:250,y:372,p:{expression:'test.exit_code == 0',true:'review',false:'fix'}},
+    {id:'fix',t:'agent',n:'Fix Agent',x:470,y:312,p:{agent:'fixer',tools:'Read, Edit, Grep',max_attempts:'3',prompt:'Đọc log lỗi build/test, tìm nguyên nhân gốc và sửa tối thiểu.'}},
+    {id:'rev',t:'agent',n:'Review Agent',x:250,y:432,p:{agent:'code-reviewer',tools:'Read, Grep',output:'{pass, issues[]}'}},
+    {id:'end',t:'end',n:'End + Report',x:40,y:432}
+  ];
+  var edges=[['start','req'],['req','plan'],['plan','appr'],['appr','code'],['code','test'],['test','cond'],['cond','fix','No'],['fix','test'],['cond','rev','Yes'],['rev','end','Pass'],['rev','fix','Issues']];
+  var cv=document.getElementById('cv'), svg=document.getElementById('edges'), props=document.getElementById('props'), W=128,H=42, byId={};
+  nodes.forEach(function(nd){
+    byId[nd.id]=nd;
+    var d=document.createElement('div'); d.className='node'+(nd.s?' s-'+nd.s:'')+(nd.t==='condition'?' cond':'');
+    d.style.left=nd.x+'px'; d.style.top=nd.y+'px'; d.dataset.id=nd.id;
+    d.innerHTML='<div class="ty" style="color:'+C[nd.t]+'">'+nd.t+'</div><div class="nm">'+nd.n+'</div>'+
+      (nd.s?'<span class="ns" style="background:'+(nd.s==='done'?'var(--ok)':'var(--run)')+'"></span>':'');
+    d.addEventListener('click',function(){select(nd.id);});
+    cv.appendChild(d);
+  });
+  var NS='http://www.w3.org/2000/svg';
+  var defs=document.createElementNS(NS,'defs');
+  defs.innerHTML='<marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#8a94a6"/></marker>';
+  svg.appendChild(defs);
+  edges.forEach(function(e){
+    var a=byId[e[0]], b=byId[e[1]], x1,y1,x2,y2,dpath;
+    if(Math.abs(a.x-b.x)<5){x1=a.x+W/2;y1=a.y+H;x2=b.x+W/2;y2=b.y;dpath='M'+x1+','+y1+' L'+x2+','+(y2-1);}
+    else if(b.x>a.x){x1=a.x+W;y1=a.y+H/2;x2=b.x;y2=b.y+H/2;var mx=(x1+x2)/2;dpath='M'+x1+','+y1+' C'+mx+','+y1+' '+mx+','+y2+' '+(x2-1)+','+y2;}
+    else {x1=a.x;y1=a.y+H/2;x2=b.x+W;y2=b.y+H/2;var mx2=(x1+x2)/2;dpath='M'+x1+','+y1+' C'+mx2+','+y1+' '+mx2+','+y2+' '+(x2+1)+','+y2;}
+    if(e[0]==='fix'&&e[1]==='test'){dpath='M'+(a.x)+','+(a.y+H/2)+' L'+(b.x+W+1)+','+(b.y+H/2);x1=a.x;y1=a.y+H/2;x2=b.x+W;y2=b.y+H/2;}
+    if(e[0]==='rev'&&e[1]==='fix'){x1=a.x+W;y1=a.y+H/2;x2=b.x+W/2;y2=b.y+H;dpath='M'+x1+','+y1+' C'+(x2)+','+y1+' '+x2+','+(y2+30)+' '+x2+','+(y2+1);}
+    var p=document.createElementNS(NS,'path'); p.setAttribute('d',dpath); p.setAttribute('fill','none');
+    p.setAttribute('stroke','#8a94a6'); p.setAttribute('stroke-width','1.5'); p.setAttribute('marker-end','url(#ah)');
+    if(e[0]==='fix'||e[1]==='fix') p.setAttribute('stroke-dasharray','5 4');
+    svg.appendChild(p);
+    if(e[2]){var tx=document.createElementNS(NS,'text'); tx.textContent=e[2];
+      tx.setAttribute('x',(x1+x2)/2+4); tx.setAttribute('y',(y1+y2)/2-4); tx.setAttribute('font-size','11'); tx.setAttribute('fill','#8a94a6'); tx.setAttribute('font-weight','600');
+      svg.appendChild(tx);}
+  });
+  function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;');}
+  function select(id){
+    cv.querySelectorAll('.node').forEach(function(d){d.classList.toggle('sel',d.dataset.id===id);});
+    var nd=byId[id], h='<div class="pt">Thuộc tính node</div>';
+    h+='<label>ID</label><div class="f mono">'+nd.id+'</div><label>Loại</label><div class="f" style="color:'+C[nd.t]+';font-weight:600">'+nd.t+'</div><label>Tên hiển thị</label><div class="f">'+esc(nd.n)+'</div>';
+    var p=nd.p||{};
+    Object.keys(p).forEach(function(k){
+      if(k==='prompt') h+='<label>System prompt</label><textarea class="f">'+esc(p[k])+'</textarea>';
+      else h+='<label>'+k+'</label><div class="f mono">'+esc(p[k])+'</div>';
+    });
+    if(nd.s) h+='<label>Trạng thái (JOB-0142)</label><div class="f">'+(nd.s==='done'?'✓ Hoàn tất':'● Đang chạy')+'</div>';
+    props.innerHTML=h;
+  }
+  select('code');
+})();
+</script>
+</body>
+</html>
