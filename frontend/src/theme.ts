@@ -29,6 +29,9 @@ export const theme: ThemeConfig = {
     boxShadow: 'none',
     boxShadowSecondary: '0 6px 24px rgba(11,37,69,.12)',
     wireframe: false,
+    // No popup animation: rc-trigger divides the dropdown offset by its measured scale, so a measurement taken while the
+    // open animation is still scaling the popup throws the dropdown ~1000vw/vh away from its select.
+    motion: false,
   },
   components: {
     Button: { primaryShadow: 'none', defaultShadow: 'none', dangerShadow: 'none', fontWeight: 500 },
