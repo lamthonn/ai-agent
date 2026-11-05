@@ -13,6 +13,10 @@ export const theme: ThemeConfig = {
     colorBorder: '#cbd3df',
     colorBorderSecondary: '#e2e8f0',
     colorBgLayout: '#f5f8fc',
+    // Selected / hovered rows in dropdowns: antd derives these from the navy primary, which came out as a dark slate.
+    controlItemBgHover: '#f3f6fa',
+    controlItemBgActive: '#e8eef6',
+    controlItemBgActiveHover: '#dbe5f1',
     colorSuccess: '#1e7b4f',
     colorError: '#c4242a',
     colorWarning: '#92400e',
