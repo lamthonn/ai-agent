@@ -1,0 +1,41 @@
+# Codes Loop: PostgreSQL + API + web. Own project name, network and volume: it shares nothing with other stacks.
+# Only the web container publishes a port; the database and the API are reachable inside this stack only.
+name: codesloop
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: codesloop
+      POSTGRES_USER: codesloop
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD in .env}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U codesloop -d codesloop"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  api:
+    build: { context: .., dockerfile: deploy/api.Dockerfile }
+    restart: unless-stopped
+    depends_on:
+      db: { condition: service_healthy }
+    environment:
+      Db__Provider: postgres
+      ConnectionStrings__Default: Host=db;Database=codesloop;Username=codesloop;Password=${DB_PASSWORD}
+      Jwt__Key: ${JWT_KEY:?set JWT_KEY in .env}
+      Worker__Token: ${WORKER_TOKEN:?set WORKER_TOKEN in .env}
+      Seed__Password: ${SEED_PASSWORD:?set SEED_PASSWORD in .env}
+
+  web:
+    build: { context: .., dockerfile: deploy/web.Dockerfile }
+    restart: unless-stopped
+    depends_on: [api]
+    ports:
+      - "${WEB_PORT:-8200}:80"
+
+volumes:
+  pgdata:

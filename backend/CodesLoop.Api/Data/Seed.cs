@@ -9,7 +9,8 @@ public static class Seed
 {
     public static async Task RunAsync(AppDb db, IConfiguration cfg, string contentRoot)
     {
-        await db.Database.EnsureCreatedAsync();   // prototype: migrations come with the PostgreSQL deployment
+        // PostgreSQL (deployment) is built by migrations; SQLite (tests, quick local runs) is created from the model.
+        if (db.Database.IsNpgsql()) await db.Database.MigrateAsync(); else await db.Database.EnsureCreatedAsync();
         if (await db.Accounts.AnyAsync()) return;
 
         var password = cfg["Seed:Password"] ?? throw new InvalidOperationException("Set Seed:Password to create the first accounts.");

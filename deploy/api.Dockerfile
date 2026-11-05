@@ -1,0 +1,13 @@
+# Build context: the repository root (the API embeds the workflow JSON from agent-runtime/workflows).
+FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
+WORKDIR /src
+COPY backend/CodesLoop.Api backend/CodesLoop.Api
+COPY agent-runtime/workflows agent-runtime/workflows
+RUN dotnet publish backend/CodesLoop.Api -c Release -o /out
+
+FROM mcr.microsoft.com/dotnet/aspnet:8.0
+WORKDIR /app
+COPY --from=build /out .
+ENV ASPNETCORE_URLS=http://+:8080
+USER app
+ENTRYPOINT ["dotnet", "CodesLoop.Api.dll"]
