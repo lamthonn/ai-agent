@@ -98,7 +98,14 @@ Mỗi mốc có điều kiện "xong khi" kiểm chứng được. Làm theo th�
 
 ## 5. Cần bạn chốt trước mốc 1
 
-1. **D7 — Xác thực Claude.** Agent SDK chạy trong backend nên dùng **API key** (trả theo token). Gói Pro $20/tháng dùng cho Claude Code cá nhân; tài liệu Agent SDK hướng dẫn xác thực bằng API key, và roadmap (3.2, 5.4) cũng khuyên không dựa vào một phiên đăng nhập Pro cho worker. Đề xuất: mốc 1–2 chạy CLI trên máy của chính bạn, bằng đăng nhập Claude Code (Pro) của bạn, để thử; từ mốc 4 (worker phục vụ cả nhóm) dùng API key trong một workspace riêng trên Console, có hạn mức chi tiêu theo tháng. Runtime đọc xác thực từ biến môi trường nên đổi cách xác thực không phải sửa code.
+1. ~~D7 — Xác thực Claude~~ **Đã chốt:** dự án đang thử cá nhân, 1 người dùng → dùng gói **Claude Pro** của chủ dự án.
+   - Mốc 1–3: runtime chạy trên máy bạn, dùng đăng nhập Claude Code sẵn có.
+   - Từ mốc 4–5 (worker trong Docker): tạo token bằng `claude setup-token`, đưa vào container qua biến `CLAUDE_CODE_OAUTH_TOKEN` (Docker secret, không ghi vào image hay repo). Không mount `~/.claude`.
+   - Hệ quả cho thiết kế:
+     - Giới hạn Pro tính theo phiên 5 giờ và theo tuần, dùng chung với claude.ai/Claude Code. Worker phải bắt lỗi hết lượt → đưa job về trạng thái **Tạm dừng: hết lượt Claude**, tự chạy lại khi mở phiên mới, giữ nguyên bước đang dở.
+     - Chỉ chạy **1 job một lúc** (1 worker) để không đốt lượt quá nhanh.
+     - Hạn mức trong app nên đếm theo **token** (USD chỉ là quy đổi tham khảo, không phải hóa đơn).
+   - Khi có người thứ hai dùng hoặc đưa vào dùng chung: chuyển sang API key trong workspace riêng trên Console, có hạn mức chi tiêu tháng. Runtime đọc xác thực từ biến môi trường nên đổi không phải sửa code.
 2. **Máy chạy worker:** máy Windows có Docker Desktop hay một máy chủ Linux?
 3. **Git server** `git.codes.tech` là GitLab, Gitea hay khác? (để tạo branch, push, mở merge request)
 4. **Repo thử cho mốc 1:** một repo không quan trọng (bản sao QLKho?).
