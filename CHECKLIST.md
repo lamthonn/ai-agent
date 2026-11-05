@@ -34,13 +34,13 @@
 
 ## C. Backend & runtime (kế hoạch chi tiết: [docs/BACKEND-PLAN.md](docs/BACKEND-PLAN.md))
 
-- [ ] C1. Agent runtime Python: chạy 1 job trên 1 repo (Phase 1) — code xong trong `agent-runtime/`, đã test bằng agent giả; chờ chạy thật lần đầu trên QLKho (nhánh `system_test`)
+- [ ] C1. Agent runtime Python: chạy 1 job trên 1 repo (Phase 1) — code + worker xong trong `agent-runtime/`, test bằng agent giả; chờ chạy thật lần đầu với Claude trên QLKho (nhánh `system_test`)
 - [ ] C2. Multi-agent: phân tích, kế hoạch, code, test, review, sửa (Phase 2)
-- [ ] C3. API ASP.NET Core + PostgreSQL: project, job, workflow có phiên bản, approval (Phase 3)
+- [ ] C3. API ASP.NET Core + PostgreSQL: project, job, workflow có phiên bản, approval (Phase 3) — API xong, 11 test trên SQLite (`backend/`); còn PostgreSQL + migrations
 - [ ] C4. Docker sandbox + hàng đợi (Phase 5)
 - [ ] C5. Giám sát: chi phí, token, chất lượng (Phase 6)
-- [ ] C6. Áp hạn mức ở worker: kiểm tra trước khi chạy job và giữa các node (USD hoặc token)
-- [ ] C7. Kiểm tra quyền ở API: mọi request lọc theo project người dùng được cấp
+- [x] C6. Áp hạn mức: server không giao job khi chạm hạn mức ngày; worker dừng giữa các node khi chạm hạn mức job (token). Chưa tạm dừng job đang chạy
+- [x] C7. Kiểm tra quyền ở API: mọi request lọc theo project người dùng được cấp (có test)
 
 ## D. Cần bạn chốt
 

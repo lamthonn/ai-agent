@@ -64,3 +64,29 @@ def test_conditions_do_not_use_eval():
     assert not evaluate("exit_code == 0", {"exit_code": 2})
     with pytest.raises(JobFailed, match="unsupported"):
         evaluate("__import__('os').system('x')", {})
+
+
+def test_pause_at_approval_then_resume_continues_from_the_next_node_and_keeps_loop_counts():
+    h, seen = handlers([1, 0])
+    h.approval = lambda n, c: "pause"
+    first = run(WF, h)
+    assert first.status == "paused" and first.approval.id == "approve_plan" and first.resume == "code"
+    assert seen == ["analyze", "plan"]
+
+    ctx = {"_visits": {"fix": 2}}                       # what a worker saved when it paused earlier
+    h2, seen2 = handlers([1, 1, 0])                     # fails the build twice more
+    h2.approval = lambda n, c: True
+    r = run(WF, h2, ctx=ctx, start="code")
+    assert r.status == "failed" and "limit of 3" in r.reason and seen2.count("fix") == 1   # only one round was left
+
+
+def test_on_step_can_stop_the_run():
+    h, seen = handlers([0])
+    r = run(WF, h, on_step=lambda node, step: node.id == "plan")
+    assert r.status == "cancelled" and seen == ["analyze", "plan"]
+
+
+def test_tokens_used_by_earlier_runs_count_toward_the_limit():
+    h, _ = handlers([0], tokens=100)
+    r = run(WF, h, token_limit=1000, tokens_used=950)
+    assert r.status == "failed" and "token limit" in r.reason

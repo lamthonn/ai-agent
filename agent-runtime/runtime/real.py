@@ -15,10 +15,12 @@ from .workflow import Node
 _TAIL = 6000  # characters of command output kept for the next agent
 
 
-def sh(cmd: str, cwd: Path, check: bool = True) -> subprocess.CompletedProcess:
-    p = subprocess.run(cmd, cwd=cwd, shell=True, capture_output=True, text=True, encoding="utf-8", errors="replace")
+def sh(cmd: str | list[str], cwd: Path, check: bool = True) -> subprocess.CompletedProcess:
+    """A list runs without a shell (git and gh, where job titles and branch names are arguments);
+    a string runs in the shell (the project's own build/test commands, which the admin configured)."""
+    p = subprocess.run(cmd, cwd=cwd, shell=isinstance(cmd, str), capture_output=True, text=True, encoding="utf-8", errors="replace")
     if check and p.returncode:
-        raise JobFailed(f"`{cmd}` failed: {(p.stderr or p.stdout)[-500:]}")
+        raise JobFailed(f"`{cmd if isinstance(cmd, str) else ' '.join(cmd)}` failed: {(p.stderr or p.stdout)[-500:]}")
     return p
 
 
@@ -32,6 +34,8 @@ class Job:
     build: str
     test: str
     token_limit: int | None = None
+    root: Path | None = None                        # where job worktrees live; default: next to the repo
+    agents: dict | None = None                      # server-side agent settings; default: runtime/agents.py
 
     @property
     def branch(self) -> str:
@@ -41,20 +45,25 @@ class Job:
 
     @property
     def workdir(self) -> Path:
-        return self.repo.parent / ".codesloop" / self.id
+        return (self.root or self.repo.parent / ".codesloop") / self.id
 
 
-def prepare(job: Job) -> Path:
-    """An isolated checkout on a new branch. The user's own working tree is never touched."""
-    sh(f"git fetch origin {job.base}", job.repo)
-    job.workdir.parent.mkdir(exist_ok=True)
-    sh(f'git worktree add -b {job.branch} "{job.workdir}" origin/{job.base}', job.repo)
+def prepare(job: Job, branch: str | None = None) -> Path:
+    """An isolated checkout on a job branch. The user's own working tree is never touched.
+    `branch` is the existing branch of a job being resumed: it is checked out again if its folder is gone."""
+    sh(["git", "fetch", "origin", job.base], job.repo)
+    job.workdir.parent.mkdir(parents=True, exist_ok=True)
+    if branch:
+        if not job.workdir.exists():
+            sh(["git", "worktree", "add", str(job.workdir), branch], job.repo)
+    else:
+        sh(["git", "worktree", "add", "-b", job.branch, str(job.workdir), f"origin/{job.base}"], job.repo)
     return job.workdir
 
 
 def diff(job: Job) -> str:
-    sh("git add -A", job.workdir, check=False)  # new files count as part of the change
-    return sh(f"git diff --cached origin/{job.base}", job.workdir, check=False).stdout
+    sh(["git", "add", "-A"], job.workdir, check=False)  # new files count as part of the change
+    return sh(["git", "diff", "--cached", f"origin/{job.base}"], job.workdir, check=False).stdout
 
 
 def _prompt(job: Job, node: Node, ctx: dict) -> str:
@@ -72,7 +81,7 @@ def _prompt(job: Job, node: Node, ctx: dict) -> str:
 
 
 async def _ask(job: Job, node: Node, ctx: dict) -> dict:
-    spec = AGENTS[node.agent]
+    spec = (job.agents or AGENTS)[node.agent]
     opts = ClaudeAgentOptions(
         model=spec.model, system_prompt=spec.prompt, allowed_tools=list(spec.tools), max_turns=spec.max_turns,
         cwd=str(job.workdir), permission_mode="acceptEdits" if spec.writes else "default",
@@ -93,6 +102,17 @@ async def _ask(job: Job, node: Node, ctx: dict) -> dict:
         v = re.findall(r"VERDICT:\s*(pass|fail)", text, re.I)
         out["review"] = {"verdict": v[-1].lower() if v else "fail", "text": text}
     return out
+
+
+def publish(job: Job) -> str:
+    """Commit, push the job branch and open a pull request into the base branch. Never merges."""
+    title = f"{job.id}: {job.title}"
+    sh(["git", "add", "-A"], job.workdir)
+    sh(["git", "commit", "-m", title, "-m", "Co-Authored-By: Claude <noreply@anthropic.com>"], job.workdir, check=False)
+    sh(["git", "push", "-u", "origin", job.branch], job.workdir)
+    pr = sh(["gh", "pr", "create", "--base", job.base, "--head", job.branch, "--title", title,
+             "--body", "Tạo tự động bởi Codes Loop. Đã qua review và duyệt thủ công."], job.workdir)
+    return pr.stdout.strip()
 
 
 def handlers(job: Job, approve) -> Handlers:

@@ -1,0 +1,26 @@
+{
+  "id": "quick-fix",
+  "version": 2,
+  "nodes": [
+    { "id": "start", "type": "start", "label": "Bắt đầu" },
+    { "id": "analyze", "type": "agent", "label": "Đọc bug report", "agent": "requirement-analyzer" },
+    { "id": "code", "type": "agent", "label": "Sửa code", "agent": "coder" },
+    { "id": "build_test", "type": "test", "label": "Build & test", "command": "{project.build} && {project.test}" },
+    { "id": "build_ok", "type": "condition", "label": "Build & test đạt?", "expr": "exit_code == 0" },
+    { "id": "fix", "type": "agent", "label": "Sửa lỗi", "agent": "fixer", "maxLoops": 2 },
+    { "id": "review", "type": "agent", "label": "Review code", "agent": "code-reviewer" },
+    { "id": "approve_merge", "type": "approval", "label": "Duyệt merge", "approver": "project" },
+    { "id": "end", "type": "end", "label": "Báo cáo & kết thúc" }
+  ],
+  "edges": [
+    { "from": "start", "to": "analyze" },
+    { "from": "analyze", "to": "code" },
+    { "from": "code", "to": "build_test" },
+    { "from": "build_test", "to": "build_ok" },
+    { "from": "build_ok", "to": "review", "when": true },
+    { "from": "build_ok", "to": "fix", "when": false },
+    { "from": "fix", "to": "build_test" },
+    { "from": "review", "to": "approve_merge" },
+    { "from": "approve_merge", "to": "end" }
+  ]
+}

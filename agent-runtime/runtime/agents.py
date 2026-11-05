@@ -15,6 +15,15 @@ class AgentSpec:
 # Bash patterns the coder and fixer may run on the machine (no sandbox yet; Docker comes in milestone 5).
 SAFE_BASH = ("Bash(dotnet build:*)", "Bash(dotnet test:*)", "Bash(git status:*)", "Bash(git diff:*)", "Bash(git log:*)")
 
+def from_claim(rows: list[dict]) -> dict[str, AgentSpec]:
+    """Agent settings as the server stores them. A bare "Bash" is never passed on: it becomes the safe patterns."""
+    out = {}
+    for r in rows:
+        tools = tuple(t for t in r["tools"] if t != "Bash") + (SAFE_BASH if "Bash" in r["tools"] else ())
+        out[r["id"]] = AgentSpec(r["id"], r["model"], tools, r["maxTurns"], r["prompt"], writes=r["permission"] == "write")
+    return out
+
+
 AGENTS: dict[str, AgentSpec] = {a.id: a for a in [
     AgentSpec("requirement-analyzer", "claude-sonnet-5-5", ("Read", "Grep", "Glob"), 20,
               "Bạn phân tích tài liệu yêu cầu cho một job lập trình.\n- Liệt kê mục tiêu, phạm vi, tiêu chí nghiệm thu.\n"

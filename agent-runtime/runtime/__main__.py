@@ -49,12 +49,7 @@ def main() -> int:
         print(f"  {s.node:14} {s.outcome:9} {s.tokens:>8} token {s.note}")
     print(f"=> {res.status} {res.reason} | {res.tokens} token")
     if res.status == "succeeded" and not args.no_pr:
-        sh("git add -A", wd)
-        sh(f'git commit -m "{job.id}: {job.title}\n\nCo-Authored-By: Claude <noreply@anthropic.com>"', wd, check=False)
-        sh(f"git push -u origin {job.branch}", wd)
-        pr = sh(f'gh pr create --base {job.base} --head {job.branch} --title "{job.id}: {job.title}" '
-                f'--body "Tạo tự động bởi Codes Loop. Đã qua review và duyệt thủ công."', wd)
-        print(pr.stdout.strip())
+        print(publish(job))
     return 0 if res.status == "succeeded" else 1
 
 

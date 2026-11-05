@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="CodesLoop.Api.Tests/CodesLoop.Api.Tests.csproj" />
+  <Project Path="CodesLoop.Api/CodesLoop.Api.csproj" />
+</Solution>
