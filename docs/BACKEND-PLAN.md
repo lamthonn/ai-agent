@@ -98,7 +98,7 @@ Mỗi mốc có điều kiện "xong khi" kiểm chứng được. Làm theo th�
 
 ## 5. Cần bạn chốt trước mốc 1
 
-1. **D7 — Xác thực Claude.** Agent SDK chạy trong backend nên dùng **API key** (trả theo token). Gói Pro $20/tháng dùng cho Claude Code cá nhân; tài liệu Agent SDK hướng dẫn xác thực bằng API key, và roadmap (3.2, 5.4) cũng khuyên không dựa vào một phiên đăng nhập Pro cho worker. Mình đề xuất: tạo API key riêng, đặt hạn mức chi tiêu ở Console, giữ $1/ngày trong app.
+1. **D7 — Xác thực Claude.** Agent SDK chạy trong backend nên dùng **API key** (trả theo token). Gói Pro $20/tháng dùng cho Claude Code cá nhân; tài liệu Agent SDK hướng dẫn xác thực bằng API key, và roadmap (3.2, 5.4) cũng khuyên không dựa vào một phiên đăng nhập Pro cho worker. Đề xuất: mốc 1–2 chạy CLI trên máy của chính bạn, bằng đăng nhập Claude Code (Pro) của bạn, để thử; từ mốc 4 (worker phục vụ cả nhóm) dùng API key trong một workspace riêng trên Console, có hạn mức chi tiêu theo tháng. Runtime đọc xác thực từ biến môi trường nên đổi cách xác thực không phải sửa code.
 2. **Máy chạy worker:** máy Windows có Docker Desktop hay một máy chủ Linux?
 3. **Git server** `git.codes.tech` là GitLab, Gitea hay khác? (để tạo branch, push, mở merge request)
 4. **Repo thử cho mốc 1:** một repo không quan trọng (bản sao QLKho?).

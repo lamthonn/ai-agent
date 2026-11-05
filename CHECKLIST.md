@@ -50,7 +50,7 @@
 - [x] D4. Hạn mức theo token (hoặc USD)
 - [x] D5. Hạn mức mặc định $1/ngày, $0,50/job
 - [x] D6. Không tự duyệt job của mình: có công tắc, mặc định bật
-- [ ] D7. Chạy agent bằng Claude Pro hay API key (xem roadmap 3.2): Pro tính theo giới hạn lượt dùng, không theo USD
+- [ ] D7. Xác thực Claude: đề xuất Pro chỉ để thử trên máy bạn (mốc 1–2), worker của nhóm dùng API key trong workspace riêng có hạn mức (xem docs/BACKEND-PLAN.md mục 5)
  
 ## E. Yêu cầu tiếp theo
 
