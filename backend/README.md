@@ -39,12 +39,13 @@ python -m runtime.worker --api http://localhost:5099 --token dev-worker-token --
 
 ## API
 
-Người dùng (`Authorization: Bearer`): `POST /api/auth/login`, `GET /api/me`, `projects`, `agents`, `jobs` (+ `/{id}`, `/{id}/events?after=`, `POST`, `/{id}/cancel`), `approvals` (+ `POST /{id}/decide`), `workflows` (+ `/{id}/versions/{n}`, `POST /{id}/versions`), `settings/budget`, `settings/rules`, `accounts`.
+Người dùng (`Authorization: Bearer`): `POST /api/auth/login`, `GET /api/me`, `projects`, `agents`, `jobs` (+ `/{id}`, `/{id}/events?after=`, `POST`, `/{id}/cancel`), `approvals` (+ `POST /{id}/decide`), `workflows` (+ `/{id}/versions/{n}`, `POST /{id}/versions`), `settings/budget`, `settings/rules`, `accounts`, `sources/{project}` (+ `PUT /{bug|case}`, `/sync`, `/bugs/{id}/run`).
 
-Worker (`X-Worker-Token`): `POST /internal/jobs/claim`, `/{id}/steps`, `/events`, `/meta`, `/approval`, `/complete`.
+Worker (`X-Worker-Token`): `POST /internal/jobs/claim`, `/{id}/steps`, `/events`, `/meta`, `/approval`, `/complete`; file bug: `/internal/sources/due`, `/sources/{project}/{kind}/result`, `/bugs/pending`, `/bugs/{id}/triage`, `/bugs/autorun`, `/bugs/writeback`, `/bugs/{id}/written`.
 
 ## Đã kiểm chứng / chưa
 
 - Có test: đăng nhập, thành viên chỉ thấy project được cấp, người tạo không tự duyệt, phiên bản workflow bất biến + job giữ đúng phiên bản, kiểm tra workflow, nhận job một lần duy nhất, chạy tiếp sau duyệt, hạn mức token theo ngày, hủy job.
 - PostgreSQL: có migrations (`Data/Migrations`), đã chạy thật trong Docker (xem `deploy/README.md`): đăng nhập, tạo job, worker nhận job một lần duy nhất, hoàn tất. Bộ test tự động vẫn chạy trên SQLite (không cần Docker).
+- File bug (Google Sheet): test cho lưu cấu hình, đọc dòng không trùng, phân loại, tạo job từ bug, tự chạy theo số job/ngày, ghi trạng thái ngược, đổi file. Chưa thử với Google Sheet thật.
 - Chưa có: log realtime SignalR (hiện đọc `events?after=`), "yêu cầu sửa" ở bước duyệt, tạm dừng job đang chạy khi chạm hạn mức, giới hạn thử đăng nhập sai, email cảnh báo hạn mức.

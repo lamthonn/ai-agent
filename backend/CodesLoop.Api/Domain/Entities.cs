@@ -134,3 +134,52 @@ public record BudgetSettings(bool Enabled = true, string Unit = "usd", long Dail
     double WarnAt = 0.8, string Action = "queue", string Notify = "");
 
 public record RuleSettings(bool NoSelfApprove = true);
+
+/// <summary>A Google Sheet linked to a project: the bug file (kind "bug") or the test-case file (kind "case").</summary>
+public class SourceLink
+{
+    public string ProjectId { get; set; } = "";
+    public string Kind { get; set; } = "bug";
+    public string Url { get; set; } = "";
+    public string Tab { get; set; } = "Sheet1";
+    public string ColumnsJson { get; set; } = "{}";     // field -> column letter
+    public string Filter { get; set; } = "";             // bug file only, e.g. "Trạng thái = Mới"
+    public string Mode { get; set; } = "suggest";        // suggest | auto
+    public string AutoWorkflow { get; set; } = "quick-fix";
+    public int MaxPerDay { get; set; } = 1;
+    public bool WriteBack { get; set; } = true;
+    public DateTime? LastSyncAt { get; set; }
+    public DateTime? SyncRequestedAt { get; set; }
+    public string? LastError { get; set; }
+}
+
+/// <summary>One row of the bug file, matched by Key (the Bug ID column) so a bug never becomes two jobs.</summary>
+public class BugRow
+{
+    public int Id { get; set; }
+    public string ProjectId { get; set; } = "";
+    public string Key { get; set; } = "";
+    public int Row { get; set; }
+    public string Title { get; set; } = "";
+    public string Steps { get; set; } = "";
+    public string Severity { get; set; } = "";
+    public string Reporter { get; set; } = "";
+    public string SheetStatus { get; set; } = "";
+    public string Triage { get; set; } = "new";          // new | ready | need-info | duplicate | job
+    public string? Workflow { get; set; }
+    public string? Note { get; set; }
+    public string? JobId { get; set; }
+    public string? Written { get; set; }                 // last text the worker wrote into the status cell
+    public DateTime CreatedAt { get; set; }
+}
+
+public class CaseRow
+{
+    public int Id { get; set; }
+    public string ProjectId { get; set; } = "";
+    public string Key { get; set; } = "";
+    public string Module { get; set; } = "";
+    public string Title { get; set; } = "";
+    public string Steps { get; set; } = "";
+    public string Expected { get; set; } = "";
+}

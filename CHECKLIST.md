@@ -22,7 +22,7 @@
 
 ## B. Frontend còn thiếu
 
-- [x] B1. Gọi API thật: đăng nhập, projects, jobs (tạo, xem, hủy), chờ duyệt (duyệt, từ chối), agents, workflows (chỉ xem), hạn mức, quy tắc duyệt, thành viên. Còn dữ liệu mẫu: Tổng quan/Giám sát (sandbox), Bug & test case, lưu workflow ở builder, Claude API/Sandbox trong Cài đặt
+- [x] B1. Gọi API thật: đăng nhập, projects, jobs (tạo, xem, hủy), chờ duyệt (duyệt, từ chối), agents, workflows (chỉ xem), hạn mức, quy tắc duyệt, thành viên. Còn dữ liệu mẫu: Tổng quan/Giám sát (sandbox), lưu workflow ở builder, Claude API/Sandbox trong Cài đặt
 - [ ] B3. Log realtime qua SignalR
 - [x] B4. Loading lần đầu, báo lỗi khi gọi API; còn thiếu skeleton từng bảng
 - [ ] B5. Builder: lưu phiên bản thật, chạy thử, tô trạng thái node khi job chạy
@@ -54,7 +54,7 @@
  
 ## E. Yêu cầu tiếp theo
 
-- [x] E1. Gắn file bug (Google Sheet / Excel) cho project, hệ thống tự đọc, phân loại, tạo job sửa, ghi kết quả ngược vào file (màn **Bug & test case**; backend: mốc 6)
-- [x] E2. Workflow **Kiểm thử theo test case**: chạy test case có sẵn trong file test case, ca lỗi ghi vào file bug; không sửa code, không viết test mới
+- [x] E1. Gắn file bug (Google Sheet) cho project, worker đọc mỗi 10 phút, Claude (haiku) phân loại, tạo job sửa (bấm Chạy hoặc tự chạy theo số job/ngày), ghi trạng thái ngược vào file. Lưu trong DB. Đã kiểm chứng với sheet giả (test + chạy thật); **chưa thử với Google Sheet thật** (cần khóa tài khoản dịch vụ). Chưa hỗ trợ Excel/OneDrive
+- [ ] E2. Workflow **Kiểm thử theo test case**: chạy test case có sẵn trong file test case, ca lỗi ghi vào file bug; không sửa code, không viết test mới. Mới đọc và hiển thị test case; workflow chạy chưa có trên server
 - [x] D8. Chế độ mặc định của file bug: Chỉ đề xuất · Kiểm thử chỉ chạy test case có sẵn
 - [ ] D9. Gửi file bug và file test case mẫu để chốt ghép cột

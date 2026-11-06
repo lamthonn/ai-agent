@@ -39,3 +39,25 @@ class Api:
 
     def complete(self, job: str, status: str, reason: str = "") -> None:
         self._post(f"/internal/jobs/{job}/complete", {"status": status, "reason": reason})
+
+    # ---- bug and test-case files ----
+    def sources_due(self, service_account: str | None = None) -> list[dict]:
+        return self._post("/internal/sources/due", {"serviceAccount": service_account}) or []
+
+    def sources_result(self, project: str, kind: str, rows: list[dict] | None = None, error: str | None = None) -> None:
+        self._post(f"/internal/sources/{project}/{kind}/result", {"rows": rows, "error": error})
+
+    def bugs_pending(self) -> dict:
+        return self._post("/internal/bugs/pending") or {"bugs": [], "known": [], "workflows": []}
+
+    def bug_triage(self, bug: int, triage: str, workflow: str | None = None, note: str | None = None) -> None:
+        self._post(f"/internal/bugs/{bug}/triage", {"triage": triage, "workflow": workflow, "note": note})
+
+    def bugs_autorun(self) -> int:
+        return int((self._post("/internal/bugs/autorun") or {}).get("created", 0))
+
+    def bugs_writeback(self) -> list[dict]:
+        return self._post("/internal/bugs/writeback") or []
+
+    def bug_written(self, bug: int, text: str) -> None:
+        self._post(f"/internal/bugs/{bug}/written", {"text": text})

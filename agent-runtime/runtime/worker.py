@@ -5,6 +5,8 @@ server and lets go of the job; once a person decides, the job comes back through
 Uses your Claude Code login (Pro): run one worker only, so the 5-hour usage window is not drained by parallel jobs."""
 import argparse
 import json
+import os
+import sys
 import time
 from pathlib import Path
 
@@ -13,6 +15,7 @@ from .agents import from_claim
 from .api import Api
 from .executor import Handlers, run
 from .real import Job, diff, handlers, prepare, publish, sh
+from .sources import Sheets, tick
 from .workflow import Workflow
 
 
@@ -88,9 +91,19 @@ def main() -> None:
     a.add_argument("--poll", type=int, default=10, help="seconds between checks when the queue is empty")
     a.add_argument("--once", action="store_true", help="handle at most one job, then exit")
     a.add_argument("--no-pr", action="store_true")
+    a.add_argument("--google-key", default=os.environ.get("GOOGLE_APPLICATION_CREDENTIALS"), help="service-account key (JSON) to read private sheets and write status back")
+    a.add_argument("--no-sources", action="store_true", help="do not read the bug and test-case files")
     args = a.parse_args()
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")   # Vietnamese in the log must not crash a Windows console set to a legacy code page
     api = Api(args.api, args.token)
+    sheets, state, last_tick = (None if args.no_sources else Sheets(args.google_key)), {}, 0.0
     while True:
+        if sheets and time.time() - last_tick >= args.poll:   # bug files: read, triage, auto-run, write back
+            last_tick = time.time()
+            try:
+                tick(api, sheets, state=state)
+            except Exception as e:   # the server being down must not stop job handling
+                print("  bug files: lỗi", e)
         claim = api.claim()
         if claim:
             print(f"{claim['job']['id']}: {claim['job']['title']}")

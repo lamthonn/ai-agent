@@ -127,6 +127,112 @@ namespace CodesLoop.Api.Data.Migrations
                     b.ToTable("Approvals");
                 });
 
+            modelBuilder.Entity("CodesLoop.Api.Domain.BugRow", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("JobId")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Key")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Note")
+                        .HasColumnType("text");
+
+                    b.Property<string>("ProjectId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Reporter")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("Row")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Severity")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("SheetStatus")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Steps")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Triage")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Workflow")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Written")
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProjectId", "Key")
+                        .IsUnique();
+
+                    b.ToTable("BugRows");
+                });
+
+            modelBuilder.Entity("CodesLoop.Api.Domain.CaseRow", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Expected")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Key")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Module")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("ProjectId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Steps")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProjectId", "Key")
+                        .IsUnique();
+
+                    b.ToTable("CaseRows");
+                });
+
             modelBuilder.Entity("CodesLoop.Api.Domain.Job", b =>
                 {
                     b.Property<string>("Id")
@@ -323,6 +429,58 @@ namespace CodesLoop.Api.Data.Migrations
                     b.HasKey("Key");
 
                     b.ToTable("Settings");
+                });
+
+            modelBuilder.Entity("CodesLoop.Api.Domain.SourceLink", b =>
+                {
+                    b.Property<string>("ProjectId")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Kind")
+                        .HasColumnType("text");
+
+                    b.Property<string>("AutoWorkflow")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("ColumnsJson")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Filter")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("LastError")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("LastSyncAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("MaxPerDay")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Mode")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("SyncRequestedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Tab")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Url")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<bool>("WriteBack")
+                        .HasColumnType("boolean");
+
+                    b.HasKey("ProjectId", "Kind");
+
+                    b.ToTable("SourceLinks");
                 });
 
             modelBuilder.Entity("CodesLoop.Api.Domain.Workflow", b =>

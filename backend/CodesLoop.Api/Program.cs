@@ -35,6 +35,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.MapGet("/health", () => Results.Ok(new { ok = true }));
 UserApi.Map(app);
+SourcesApi.Map(app);
 WorkerApi.Map(app);
 app.Run();
 

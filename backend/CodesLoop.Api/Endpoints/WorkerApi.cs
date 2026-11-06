@@ -99,5 +99,7 @@ public static class WorkerApi
             await db.SaveChangesAsync();
             return Results.Ok();
         });
+
+        SourcesApi.MapWorker(g);
     }
 }

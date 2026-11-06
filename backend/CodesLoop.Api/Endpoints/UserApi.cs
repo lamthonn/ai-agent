@@ -69,6 +69,7 @@ public static class UserApi
             var ids = await db.ProjectIdsAsync(a);
             var jobs = await db.Jobs.Include(j => j.Steps).Where(j => ids.Contains(j.ProjectId)).OrderByDescending(j => j.CreatedAt).ToListAsync();
             var names = await db.Accounts.ToDictionaryAsync(x => x.Id, x => x.Name);
+            names[SourcesApi.AutoUser] = "Tự động (file bug)";
             return Results.Ok(jobs.Select(j => new { j.Id, j.Title, j.ProjectId, j.WorkflowId, j.WorkflowVersion, j.CreatedById, createdByName = names.GetValueOrDefault(j.CreatedById, j.CreatedById), j.Status, j.FailReason, j.Branch, j.CreatedAt, j.StartedAt, j.EndedAt,
                 tokens = j.Steps.Sum(s => s.Tokens), cost = j.Steps.Sum(s => s.Cost),
                 steps = j.Steps.OrderBy(s => s.Id).Select(s => new { s.NodeId, s.Outcome, s.Tokens, s.Note, s.At }) }));
@@ -97,19 +98,12 @@ public static class UserApi
             if (await db.CurrentAsync(u) is not { } a) return Results.Unauthorized();
             if (string.IsNullOrWhiteSpace(r.Title) || string.IsNullOrWhiteSpace(r.Requirement)) return Results.BadRequest(new { error = "Title and requirement are required." });
             if (!await db.CanSeeAsync(a, r.ProjectId)) return Results.Json(new { error = "Bạn không có quyền vào project này." }, statusCode: 403);
-            var project = await db.Projects.FindAsync(r.ProjectId);
-            var wf = await db.Workflows.Include(w => w.Versions).FirstOrDefaultAsync(w => w.Id == (r.WorkflowId ?? project!.DefaultWorkflowId));
-            if (wf is null) return Results.BadRequest(new { error = "Unknown workflow." });
-
             var budget = await db.GetAsync("budget", new BudgetSettings());
             if (budget.Enabled && budget.Action == "pause" && await db.TokensTodayAsync() >= budget.DailyTokens)
                 return Results.Json(new { error = "Đã chạm hạn mức ngày; job mới bị chặn." }, statusCode: 409);
 
-            var last = (await db.Jobs.Select(x => x.Id).ToListAsync()).Select(x => int.TryParse(x.AsSpan(4), out var n) ? n : 0).DefaultIfEmpty(0).Max();
-            var job = new Job { Id = $"JOB-{last + 1:0000}", Title = r.Title.Trim(), ProjectId = r.ProjectId, WorkflowId = wf.Id, WorkflowVersion = wf.Versions.Max(v => v.Version),
-                CreatedById = a.Id, Requirement = r.Requirement, TokenLimit = r.TokenLimit, CreatedAt = DateTime.UtcNow };
-            db.Jobs.Add(job);
-            await db.SaveChangesAsync();
+            var job = await JobFactory.CreateAsync(db, r.ProjectId, r.WorkflowId, r.Title, r.Requirement, r.TokenLimit, a.Id);
+            if (job is null) return Results.BadRequest(new { error = "Unknown workflow." });
             return Results.Created($"/api/jobs/{job.Id}", new { job.Id, job.Status, job.WorkflowVersion });
         });
 

@@ -16,6 +16,9 @@ public class AppDb(DbContextOptions<AppDb> options) : DbContext(options)
     public DbSet<JobEvent> JobEvents => Set<JobEvent>();
     public DbSet<Approval> Approvals => Set<Approval>();
     public DbSet<Setting> Settings => Set<Setting>();
+    public DbSet<SourceLink> SourceLinks => Set<SourceLink>();
+    public DbSet<BugRow> BugRows => Set<BugRow>();
+    public DbSet<CaseRow> CaseRows => Set<CaseRow>();
 
     protected override void OnModelCreating(ModelBuilder b)
     {
@@ -28,5 +31,8 @@ public class AppDb(DbContextOptions<AppDb> options) : DbContext(options)
         b.Entity<Job>().HasIndex(j => new { j.Status, j.CreatedAt });
         b.Entity<JobEvent>().HasIndex(e => new { e.JobId, e.Id });
         b.Entity<Setting>().HasKey(s => s.Key);
+        b.Entity<SourceLink>().HasKey(l => new { l.ProjectId, l.Kind });
+        b.Entity<BugRow>().HasIndex(r => new { r.ProjectId, r.Key }).IsUnique();
+        b.Entity<CaseRow>().HasIndex(r => new { r.ProjectId, r.Key }).IsUnique();
     }
 }

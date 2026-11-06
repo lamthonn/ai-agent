@@ -204,4 +204,119 @@ public sealed class ApiTests : IDisposable
         var lt = await As(Lt);
         (await Json(await lt.GetAsync("/api/projects"))).GetArrayLength().Should().Be(2);
     }
+
+    // ---- bug and test-case files ----
+    const string SheetUrl = "https://docs.google.com/spreadsheets/d/1abcDEF_x-y/edit";
+    static object BugLink(string mode = "suggest", int max = 1, string url = SheetUrl) => new { url, tab = "Bug", columns = new { id = "A", title = "B", steps = "C", severity = "D", status = "E", reporter = "F" },
+        filter = "Trạng thái = Mới", mode, autoWorkflow = "quick-fix", maxPerDay = max, writeBack = true };
+    static object Row(string key, int row, string status = "Mới") => new { key, row, title = $"Lỗi {key}", steps = "1. mở 2. bấm", severity = "Cao", reporter = "Thủ kho", status };
+
+    async Task Sync(HttpClient worker, params object[] rows) =>
+        (await worker.PostAsJsonAsync("/internal/sources/qlkho/bug/result", new { rows })).StatusCode.Should().Be(HttpStatusCode.OK);
+
+    [Fact]
+    public async Task Only_an_admin_links_a_sheet_and_only_a_google_sheet_with_the_required_columns_is_accepted()
+    {
+        var ma = await As(Ma); var tq = await As(Tq); var lt = await As(Lt);
+        (await tq.PutAsJsonAsync("/api/sources/qlkho/bug", BugLink())).StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        (await ma.PutAsJsonAsync("/api/sources/qlkho/bug", BugLink(url: "https://evil.example/spreadsheets/d/x"))).StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        (await ma.PutAsJsonAsync("/api/sources/qlkho/bug", new { url = SheetUrl, tab = "Bug", columns = new { id = "A" } })).StatusCode.Should().Be(HttpStatusCode.BadRequest);   // no title column
+        (await ma.PutAsJsonAsync("/api/sources/qlkho/bug", BugLink())).StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var saved = await Json(await tq.GetAsync("/api/sources/qlkho"));                          // it survives a reload and the member of that project can read it
+        saved.GetProperty("bug").GetProperty("columns").GetProperty("status").GetString().Should().Be("E");
+        saved.GetProperty("bug").GetProperty("filter").GetString().Should().Be("Trạng thái = Mới");
+        (await lt.GetAsync("/api/sources/qlkho")).StatusCode.Should().Be(HttpStatusCode.NotFound);   // another project: not even visible
+    }
+
+    [Fact]
+    public async Task Rows_are_read_once_triaged_and_a_ready_bug_becomes_one_job_only()
+    {
+        var ma = await As(Ma); var tq = await As(Tq); var worker = Worker();
+        await ma.PutAsJsonAsync("/api/sources/qlkho/bug", BugLink());
+        (await Json(await worker.PostAsJsonAsync("/internal/sources/due", new { serviceAccount = "bot@x.iam.gserviceaccount.com" }))).GetArrayLength().Should().Be(1);
+
+        await Sync(worker, Row("BUG-1", 2), Row("BUG-2", 3));
+        await Sync(worker, Row("BUG-1", 2), Row("BUG-2", 3));                                      // read again: no duplicates
+        (await Json(await worker.PostAsJsonAsync("/internal/sources/due", new { }))).GetArrayLength().Should().Be(0);   // just synced
+
+        var pending = await Json(await worker.PostAsync("/internal/bugs/pending", null));
+        pending.GetProperty("bugs").GetArrayLength().Should().Be(2);
+        var id1 = pending.GetProperty("bugs")[0].GetProperty("id").GetInt32();
+        (await worker.PostAsJsonAsync($"/internal/bugs/{id1}/triage", new { triage = "ready", workflow = "quick-fix", note = "nhỏ" })).StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var run = await tq.PostAsync($"/api/sources/qlkho/bugs/{id1}/run", null);
+        run.StatusCode.Should().Be(HttpStatusCode.OK);
+        var jobId = (await Json(run)).GetProperty("id").GetString()!;
+        (await tq.PostAsync($"/api/sources/qlkho/bugs/{id1}/run", null)).StatusCode.Should().Be(HttpStatusCode.Conflict);   // already a job
+        var job = await Json(await tq.GetAsync($"/api/jobs/{jobId}"));
+        job.GetProperty("workflowId").GetString().Should().Be("quick-fix");
+        job.GetProperty("requirement").GetString().Should().Contain("BUG-1").And.Contain("1. mở 2. bấm");
+
+        var list = await Json(await tq.GetAsync("/api/sources/qlkho"));
+        list.GetProperty("bugs").EnumerateArray().Single(b => b.GetProperty("key").GetString() == "BUG-1").GetProperty("jobId").GetString().Should().Be(jobId);
+        list.GetProperty("serviceAccount").GetString().Should().Be("bot@x.iam.gserviceaccount.com");
+    }
+
+    [Fact]
+    public async Task Auto_mode_stops_at_the_daily_cap_and_its_jobs_can_be_approved_by_anyone_with_access()
+    {
+        var ma = await As(Ma); var tq = await As(Tq); var worker = Worker();
+        await ma.PutAsJsonAsync("/api/sources/qlkho/bug", BugLink("auto", max: 1));
+        await Sync(worker, Row("BUG-1", 2), Row("BUG-2", 3));
+        foreach (var b in (await Json(await worker.PostAsync("/internal/bugs/pending", null))).GetProperty("bugs").EnumerateArray())
+            await worker.PostAsJsonAsync($"/internal/bugs/{b.GetProperty("id").GetInt32()}/triage", new { triage = "ready" });
+
+        (await Json(await worker.PostAsync("/internal/bugs/autorun", null))).GetProperty("created").GetInt32().Should().Be(1);
+        (await Json(await worker.PostAsync("/internal/bugs/autorun", null))).GetProperty("created").GetInt32().Should().Be(0);   // cap of 1 a day
+
+        var jobs = await Json(await tq.GetAsync("/api/jobs"));
+        jobs.GetArrayLength().Should().Be(1);
+        jobs[0].GetProperty("createdById").GetString().Should().Be("auto");
+        await worker.PostAsync("/internal/jobs/claim", null);
+        await worker.PostAsJsonAsync($"/internal/jobs/{jobs[0].GetProperty("id").GetString()}/approval", new { nodeId = "approve_plan", kind = "plan", resumeNode = "code", context = new { } });
+        var ap = (await Json(await tq.GetAsync("/api/approvals")))[0];
+        ap.GetProperty("canApprove").GetBoolean().Should().BeTrue();   // nobody "created" it, so even the only member may approve
+    }
+
+    [Fact]
+    public async Task Status_is_written_back_only_when_it_changed_and_a_fixed_report_is_triaged_again()
+    {
+        var ma = await As(Ma); var tq = await As(Tq); var worker = Worker();
+        await ma.PutAsJsonAsync("/api/sources/qlkho/bug", BugLink());
+        await Sync(worker, Row("BUG-1", 2), Row("BUG-2", 3));
+        var bugs = (await Json(await worker.PostAsync("/internal/bugs/pending", null))).GetProperty("bugs");
+        var (a, b) = (bugs[0].GetProperty("id").GetInt32(), bugs[1].GetProperty("id").GetInt32());
+        await worker.PostAsJsonAsync($"/internal/bugs/{a}/triage", new { triage = "need-info", note = "thiếu bước" });
+        await worker.PostAsJsonAsync($"/internal/bugs/{b}/triage", new { triage = "ready", workflow = "quick-fix" });
+        var jobId = (await Json(await tq.PostAsync($"/api/sources/qlkho/bugs/{b}/run", null))).GetProperty("id").GetString()!;
+
+        var wb = await Json(await worker.PostAsync("/internal/bugs/writeback", null));
+        wb.EnumerateArray().Select(x => x.GetProperty("text").GetString()).Should().BeEquivalentTo("Cần thêm thông tin", $"Đang xử lý · {jobId}");
+        var first = wb.EnumerateArray().First(x => x.GetProperty("key").GetString() == "BUG-1");
+        first.GetProperty("row").GetInt32().Should().Be(2);
+        first.GetProperty("statusColumn").GetString().Should().Be("E");
+        foreach (var x in wb.EnumerateArray()) await worker.PostAsJsonAsync($"/internal/bugs/{x.GetProperty("id").GetInt32()}/written", new { text = x.GetProperty("text").GetString() });
+        (await Json(await worker.PostAsync("/internal/bugs/writeback", null))).GetArrayLength().Should().Be(0);   // nothing new to write
+
+        await tq.PostAsync($"/api/jobs/{jobId}/cancel", null);                                    // the job state moves on: the sheet follows
+        (await Json(await worker.PostAsync("/internal/bugs/writeback", null)))[0].GetProperty("text").GetString().Should().Be($"Không tự sửa được · {jobId}");
+
+        await Sync(worker, Row("BUG-1", 2));                                                      // the reporter added the steps and set the status back to "Mới"
+        (await Json(await worker.PostAsync("/internal/bugs/pending", null))).GetProperty("bugs").GetArrayLength().Should().Be(1);
+    }
+
+    [Fact]
+    public async Task Linking_a_different_sheet_clears_its_rows_but_keeps_bugs_that_already_have_a_job()
+    {
+        var ma = await As(Ma); var tq = await As(Tq); var worker = Worker();
+        await ma.PutAsJsonAsync("/api/sources/qlkho/bug", BugLink());
+        await Sync(worker, Row("BUG-1", 2), Row("BUG-2", 3));
+        var bugs = (await Json(await worker.PostAsync("/internal/bugs/pending", null))).GetProperty("bugs");
+        await worker.PostAsJsonAsync($"/internal/bugs/{bugs[0].GetProperty("id").GetInt32()}/triage", new { triage = "ready" });
+        await tq.PostAsync($"/api/sources/qlkho/bugs/{bugs[0].GetProperty("id").GetInt32()}/run", null);
+
+        await ma.PutAsJsonAsync("/api/sources/qlkho/bug", BugLink(url: "https://docs.google.com/spreadsheets/d/another/edit"));
+        (await Json(await tq.GetAsync("/api/sources/qlkho"))).GetProperty("bugs").GetArrayLength().Should().Be(1);
+    }
 }

@@ -33,6 +33,14 @@ cd agent-runtime
 python -m runtime.worker --api http://<địa-chỉ-web> --token <WORKER_TOKEN> --root D:\Out-works\.codesloop
 ```
 
+### File bug (Google Sheet)
+
+Worker đọc, phân loại (Claude) và ghi trạng thái ngược vào sheet. Cài thêm `pip install -r agent-runtime/requirements.txt`.
+
+- **Chỉ đọc, không cần khóa:** chia sẻ sheet ở chế độ "Bất kỳ ai có link đều xem được". Worker không ghi trạng thái ngược được.
+- **Đọc và ghi (khuyến nghị):** tạo tài khoản dịch vụ Google (Cloud Console → bật Google Sheets API → IAM → Service accounts → tạo khóa JSON), chia sẻ sheet cho email của nó với quyền Chỉnh sửa, rồi chạy worker với `--google-key <file.json>` (hoặc biến `GOOGLE_APPLICATION_CREDENTIALS`). Email này hiện trên màn **Bug & test case → File nguồn**. File khóa là bí mật: quyền 600, không commit.
+- Tắt phần này: `--no-sources`.
+
 ## Lưu ý bảo mật
 
 - Mặc định chỉ có HTTP. Mật khẩu đăng nhập và `X-Worker-Token` đi qua mạng không mã hóa: dùng trong LAN, qua SSH tunnel (`ssh -L 8200:localhost:8200 user@server`), hoặc đặt HTTPS (tên miền + chứng chỉ) phía trước.
