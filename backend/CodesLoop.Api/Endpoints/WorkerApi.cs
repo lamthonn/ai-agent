@@ -101,5 +101,6 @@ public static class WorkerApi
         });
 
         SourcesApi.MapWorker(g);
+        WorkerStatus.MapWorker(g);
     }
 }

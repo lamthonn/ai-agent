@@ -16,6 +16,7 @@ from .api import Api
 from .executor import Handlers, run
 from .real import Job, diff, handlers, prepare, publish, sh
 from .sources import Sheets, tick
+from .status import Heartbeat
 from .workflow import Workflow
 
 
@@ -97,6 +98,8 @@ def main() -> None:
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")   # Vietnamese in the log must not crash a Windows console set to a legacy code page
     api = Api(args.api, args.token)
     sheets, state, last_tick = (None if args.no_sources else Sheets(args.google_key)), {}, 0.0
+    beat = Heartbeat(api, bool(sheets and sheets.can_write))
+    beat.start()
     while True:
         if sheets and time.time() - last_tick >= args.poll:   # bug files: read, triage, auto-run, write back
             last_tick = time.time()
@@ -107,11 +110,13 @@ def main() -> None:
         claim = api.claim()
         if claim:
             print(f"{claim['job']['id']}: {claim['job']['title']}")
+            beat.job = claim["job"]["id"]
             try:
                 print("  ->", process(claim, api, args.root, open_pr=not args.no_pr))
             except Exception as e:   # never leave a job "running" without telling the server
                 api.complete(claim["job"]["id"], "failed", f"Worker lỗi: {e}")
                 print("  -> lỗi:", e)
+            beat.job = None
             if args.once:
                 return
         elif args.once:

@@ -84,6 +84,10 @@ td .sub { margin-top: 2px; }
 .rows.compact .row { min-height: 36px; padding: 6px 0; }
 .row.attn .btn, .row.attn .ant-btn { flex: none; }
 .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; background: var(--control); }
+.dot.ok { background: var(--positive); } .dot.bad { background: var(--negative); } .dot.warn { background: var(--wait); }
+.worker-chip { display: inline-flex; align-items: center; gap: 6px; max-width: 260px; height: 28px; padding: 0 10px; border: 0; border-radius: 999px; background: transparent; color: var(--ink-2, inherit); font: inherit; font-size: 12px; cursor: default; }
+.worker-chip:hover { background: rgba(0, 0, 0, .05); }
+.worker-pop { max-width: 320px; } .worker-pop p { margin: 0 0 8px; }
 .dot.busy { background: var(--accent); } .dot.maintenance { background: var(--wait); }
 .avatar { flex: none; width: 28px; height: 28px; border-radius: 50%; display: inline-grid; place-items: center; font-size: 12px; font-weight: 600; }
 .pill.run { background: var(--pill-run-bg); color: var(--pill-run-ink); }

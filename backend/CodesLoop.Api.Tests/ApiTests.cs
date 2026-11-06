@@ -319,4 +319,23 @@ public sealed class ApiTests : IDisposable
         await ma.PutAsJsonAsync("/api/sources/qlkho/bug", BugLink(url: "https://docs.google.com/spreadsheets/d/another/edit"));
         (await Json(await tq.GetAsync("/api/sources/qlkho"))).GetProperty("bugs").GetArrayLength().Should().Be(1);
     }
+
+    [Fact]
+    public async Task The_worker_status_shows_who_is_connected_to_admins_only_and_goes_offline_when_nothing_reports()
+    {
+        var ma = await As(Ma); var tq = await As(Tq);
+        var none = await Json(await ma.GetAsync("/api/worker"));
+        none.GetProperty("online").GetBoolean().Should().BeFalse();                       // nothing ever reported
+
+        (await Worker("wrong").PostAsJsonAsync("/internal/worker/heartbeat", new { host = "h" })).StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+        (await Worker().PostAsJsonAsync("/internal/worker/heartbeat", new { host = "server", claudeInstalled = true, claudeLoggedIn = true, claudeEmail = "me@x.com", claudePlan = "pro", currentJob = "JOB-0001", googleKey = false })).StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var admin = await Json(await ma.GetAsync("/api/worker"));
+        admin.GetProperty("online").GetBoolean().Should().BeTrue();
+        admin.GetProperty("info").GetProperty("claudeEmail").GetString().Should().Be("me@x.com");
+        var member = await Json(await tq.GetAsync("/api/worker"));                        // a member sees that it works, not whose login it is
+        member.GetProperty("online").GetBoolean().Should().BeTrue();
+        member.GetProperty("info").GetProperty("claudeLoggedIn").GetBoolean().Should().BeTrue();
+        member.GetProperty("info").GetProperty("claudeEmail").ValueKind.Should().Be(JsonValueKind.Null);
+    }
 }

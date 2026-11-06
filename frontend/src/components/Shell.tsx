@@ -3,6 +3,7 @@ import { NavLink, useLocation } from 'react-router-dom';
 import { Dropdown, Segmented } from 'antd';
 import { Icon } from './Icon';
 import { Avatar } from './StatusPill';
+import { WorkerChip } from './WorkerChip';
 import { approvals, jobById, jobs, NOW } from '../data/sample';
 import { canSee, isAdmin, projectsOf, useMe } from '../data/access';
 import { signOut, useLive } from '../data/live';
@@ -80,6 +81,7 @@ export function Shell({ children }: { children: ReactNode }) {
             <kbd>Ctrl K</kbd>
           </label>
           <div className="topbar-right">
+            <WorkerChip />
             <Segmented size="small" value={lang} onChange={(v) => setLang(v as Lang)} options={[{ label: 'VI', value: 'vi' }, { label: 'EN', value: 'en' }]} aria-label={tr('Ngôn ngữ', 'Language')} />
             <button className="btn ghost help" aria-label={tr('Trợ giúp', 'Help')}><Icon name="help" /></button>
             <Dropdown menu={switcher} trigger={['click']} placement="bottomRight">

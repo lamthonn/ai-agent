@@ -61,3 +61,6 @@ class Api:
 
     def bug_written(self, bug: int, text: str) -> None:
         self._post(f"/internal/bugs/{bug}/written", {"text": text})
+
+    def heartbeat(self, info: dict) -> None:
+        self._post("/internal/worker/heartbeat", info)

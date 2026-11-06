@@ -33,6 +33,8 @@ cd agent-runtime
 python -m runtime.worker --api http://<địa-chỉ-web> --token <WORKER_TOKEN> --root D:\Out-works\.codesloop
 ```
 
+Worker báo lên server mỗi 10 giây. Chip ở thanh trên cùng của giao diện cho biết: worker online/offline, tài khoản Claude đang đăng nhập (email, gói), job đang chạy, có khóa Google hay không. Chỉ admin thấy email. Worker ngừng báo quá 45 giây thì hiện "Worker offline".
+
 ### File bug (Google Sheet)
 
 Worker đọc, phân loại (Claude) và ghi trạng thái ngược vào sheet. Cài thêm `pip install -r agent-runtime/requirements.txt`.

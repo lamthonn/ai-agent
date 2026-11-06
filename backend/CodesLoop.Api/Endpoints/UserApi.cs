@@ -61,6 +61,7 @@ public static class UserApi
         });
 
         api.MapGet("/agents", async (AppDb db) => Results.Ok(await db.Agents.ToListAsync()));
+        WorkerStatus.Map(api);
 
         // ---- jobs: every query is filtered by the projects this account may open ----
         api.MapGet("/jobs", async (AppDb db, ClaimsPrincipal u) =>
