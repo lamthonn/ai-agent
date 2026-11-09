@@ -23,8 +23,12 @@ export function Jobs() {
   const [params, setParams] = useSearchParams();
   const [tab, setTab] = useState(params.get('tab') ?? 'all');
   const [q, setQ] = useState('');
-  const [project, setProject] = useState<string | undefined>();
-  const [flow, setFlow] = useState<string | undefined>();
+  // The filters live in the URL (?p=…&w=…), so a reload or a shared link keeps them. Own keys: ?project= and ?workflow= belong to the New-job dialog.
+  const project = params.get('p') ?? undefined;
+  const flow = params.get('w') ?? undefined;
+  const patch = (changes: Record<string, string | undefined>) => setParams((cur) => { const n = new URLSearchParams(cur); for (const [k, v] of Object.entries(changes)) { if (v) n.set(k, v); else n.delete(k); } return n; });
+  const setProject = (v?: string) => patch({ p: v });
+  const setFlow = (v?: string) => patch({ w: v });
   const me = useMe();
   const visible = useMemo(() => jobs.filter((j) => canSee(me, j.project)), [me]);
   const myProjects = projects.filter((p) => canSee(me, p.id));
@@ -54,7 +58,7 @@ export function Jobs() {
     <>
       <div className="title-row">
         <div><h1>Jobs</h1><p className="sub">{isAdmin(me) ? tr('Mỗi job chạy một phiên bản workflow cố định trên branch riêng, không đụng branch gốc.', 'Each job runs one fixed workflow version on its own branch and never touches the base branch.') : tr(`Job trong ${myProjects.length} project bạn được cấp quyền: ${myProjects.map((p) => p.name).join(', ') || 'chưa có'}.`, `Jobs in the ${myProjects.length} projects you can access: ${myProjects.map((p) => p.name).join(', ') || 'none yet'}.`)}</p></div>
-        <div className="title-actions"><Button type="primary" icon={<Icon name="plus" />} onClick={() => setParams({ new: '1' })}>{tr('Tạo job', 'New job')}</Button></div>
+        <div className="title-actions"><Button type="primary" icon={<Icon name="plus" />} onClick={() => patch({ new: '1' })}>{tr('Tạo job', 'New job')}</Button></div>
       </div>
       <Tabs activeKey={tab} onChange={setTab} items={tabs.map((t) => ({ key: t.key, label: <span>{t.label} <span className="tab-count num">{scoped.filter((j) => t.match(j.status)).length}</span></span> }))} />
       <div className="filters">
@@ -67,7 +71,7 @@ export function Jobs() {
       <Table<Job> rowKey="id" columns={columns} dataSource={rows} size="middle" onRow={(j) => ({ onClick: (e) => { if (!(e.target as HTMLElement).closest('a')) nav(`/jobs/${j.id}`); }, className: 'clickable' })}
         pagination={{ pageSize: 15, showTotal: (t, [a, b]) => `${a}–${b} / ${t}`, showSizeChanger: false }}
         locale={{ emptyText: <div className="empty">{tr('Không có job nào khớp bộ lọc.', 'No jobs match these filters.')}</div> }} scroll={{ x: 1000 }} />
-      <NewJobModal open={params.get('new') === '1'} onClose={() => setParams({})} onCreated={(id) => { setParams({}); nav(`/jobs/${id}`); }} initial={{ project: params.get('project') ?? undefined, workflow: params.get('workflow') ?? undefined }} />
+      <NewJobModal open={params.get('new') === '1'} onClose={() => patch({ new: undefined, project: undefined, workflow: undefined })} onCreated={(id) => { patch({ new: undefined, project: undefined, workflow: undefined }); nav(`/jobs/${id}`); }} initial={{ project: params.get('project') ?? undefined, workflow: params.get('workflow') ?? undefined }} />
     </>
   );
 }
@@ -99,14 +103,14 @@ function NewJobModal({ open, onClose, onCreated, initial }: { open: boolean; onC
           await refresh(); onCreated(r.id);
         } catch (e) { message.error((e as Error).message); } finally { setBusy(false); }
       })}>
-      <Form form={form} layout="vertical" requiredMark={false} initialValues={{ maxFix: 3, cases: 'all', ...initial }}
-        onValuesChange={(c) => { if (c.project) form.setFieldsValue({ workflow: projectById[c.project].defaultWorkflow }); }}>
+      <Form form={form} layout="vertical" initialValues={{ maxFix: 3, cases: 'all', ...initial }}
+        onValuesChange={(c) => { if (c.project && !form.isFieldTouched('workflow')) form.setFieldsValue({ workflow: projectById[c.project].defaultWorkflow }); }}>
         <Form.Item label={tr('Tên job', 'Job title')} name="title" rules={[{ required: true, message: tr('Nhập tên job', 'Enter a title') }]}><Input placeholder={tr('Ví dụ: Thêm API quản lý người dùng', 'e.g. Add a user management API')} /></Form.Item>
         <div className="form-2">
-          <Form.Item label="Project" name="project" rules={[{ required: true, message: tr('Chọn project', 'Choose a project') }]} extra={isAdmin(me) ? undefined : tr('Chỉ các project bạn được cấp quyền.', 'Only projects you can access.')}><Select options={projects.filter((x) => canSee(me, x.id)).map((x) => ({ value: x.id, label: x.name }))} /></Form.Item>
+          <Form.Item label="Project" name="project" rules={[{ required: true, message: tr('Chọn project', 'Choose a project') }]} extra={isAdmin(me) ? undefined : tr('Chỉ các project bạn được cấp quyền.', 'Only projects you can access.')}><Select placeholder={tr('Chọn project', 'Choose a project')} options={projects.filter((x) => canSee(me, x.id)).map((x) => ({ value: x.id, label: x.name }))} /></Form.Item>
           <Form.Item label="Workflow" name="workflow" rules={[{ required: true, message: tr('Chọn workflow', 'Choose a workflow') }]}
             extra={wf ? `${tr('Chạy', 'Runs')} v${latest(wf).version}${p && p.defaultWorkflow === wf.id ? tr(' · mặc định của project', ' · project default') : ''}` : tr('Chọn project để lấy workflow mặc định', 'Pick a project to get its default')}>
-            <Select options={workflows.map((w) => ({ value: w.id, label: tx(w.name) }))} />
+            <Select disabled={!p} placeholder={tr('Chọn project trước', 'Choose a project first')} options={workflows.map((w) => ({ value: w.id, label: tx(w.name) }))} />
           </Form.Item>
         </div>
         {wf && <p className="note flow-desc">{tx(wf.description)}</p>}

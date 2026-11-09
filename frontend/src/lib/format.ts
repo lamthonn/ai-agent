@@ -30,3 +30,6 @@ export const when = (d: Date) => {
 /** Minutes between d and the prototype's clock. */
 export const minutesAgo = (d: Date) => Math.round((NOW.getTime() - d.getTime()) / 60_000);
 export const ago = (d: Date) => tr(`${duration(minutesAgo(d))} trước`, `${duration(minutesAgo(d))} ago`);
+
+/** Lower-case and strip Vietnamese diacritics, so a search for "cong" finds "Cổng". */
+export const fold = (t: string) => t.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D').toLowerCase();

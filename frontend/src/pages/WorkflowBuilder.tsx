@@ -1,7 +1,7 @@
 // Workflow builder (React Flow). Question: "Is this flow valid, and what does each node do?"
 // Palette on the left (drag or click), canvas in the middle, the selected node's properties on the right.
 // Older versions open read-only; a job always shows the version it ran with.
-import { useCallback, useMemo, useState, type DragEvent } from 'react';
+import { useCallback, useEffect, useMemo, useState, type DragEvent } from 'react';
 import { App, Alert, Button, Input, InputNumber, Modal, Segmented, Select } from 'antd';
 import {
   ReactFlow, ReactFlowProvider, Background, BackgroundVariant, Controls, Handle, MarkerType, Position, addEdge, useEdgesState, useNodesState, useReactFlow,
@@ -104,6 +104,14 @@ function Builder({ wf, v }: { wf: Workflow; v: WorkflowVersion }) {
     edges: edges.map((e) => ({ from: e.source, to: e.target, ...(e.label ? { label: e.label } : {}) })),
   }), [nodes, edges, dirty, wf, v, nextVersion]);
 
+  // an unsaved draft is lost on reload: let the browser ask first
+  useEffect(() => {
+    if (!dirty) return;
+    const warn = (e: BeforeUnloadEvent) => { e.preventDefault(); };
+    window.addEventListener('beforeunload', warn);
+    return () => window.removeEventListener('beforeunload', warn);
+  }, [dirty]);
+
   const validate = () => {
     const out: string[] = [];
     const starts = nodes.filter((n) => n.data.type === 'start'), ends = nodes.filter((n) => n.data.type === 'end');
@@ -112,6 +120,10 @@ function Builder({ wf, v }: { wf: Workflow; v: WorkflowVersion }) {
     const reach = new Set<string>(); const stack = starts.map((s) => s.id);
     while (stack.length) { const id = stack.pop()!; if (reach.has(id)) continue; reach.add(id); edges.filter((e) => e.source === id).forEach((e) => stack.push(e.target)); }
     nodes.filter((n) => !reach.has(n.id)).forEach((n) => out.push(tr(`"${n.data.label}" không đi tới được từ Start.`, `"${n.data.label}" cannot be reached from Start.`)));
+    // an agent whose result goes straight to a build/test step is there to change code: a read-only agent cannot do that
+    nodes.filter((n) => n.data.type === 'agent' && n.data.agent && agents.find((a) => a.id === n.data.agent)?.perm === 'read'
+      && edges.some((e) => e.source === n.id && ['test', 'command'].includes(nodes.find((x) => x.id === e.target)?.data.type ?? '')))
+      .forEach((n) => out.push(tr(`"${n.data.label}" dùng agent chỉ đọc nhưng bước sau là build/test: cần agent có quyền ghi.`, `"${n.data.label}" uses a read-only agent but is followed by build/test: it needs an agent that can write.`)));
     nodes.filter((n) => n.data.type === 'agent' && !n.data.agent).forEach((n) => out.push(tr(`"${n.data.label}" chưa chọn agent.`, `"${n.data.label}" has no agent.`)));
     nodes.filter((n) => n.data.type === 'condition').forEach((n) => { const outs = edges.filter((e) => e.source === n.id); if (outs.length < 2) out.push(tr(`"${n.data.label}" cần 2 nhánh ra (đang có ${outs.length}).`, `"${n.data.label}" needs 2 outgoing branches (has ${outs.length}).`)); if (!n.data.expr) out.push(tr(`"${n.data.label}" chưa có điều kiện.`, `"${n.data.label}" has no condition.`)); });
     // a cycle must pass through a node with a loop limit
@@ -180,7 +192,7 @@ function Builder({ wf, v }: { wf: Workflow; v: WorkflowVersion }) {
               <h2 className="pane-h">{kindOf(sel.data.type).label}<span className="meta mono">{sel.id}</span></h2>
               <div className="field"><label htmlFor="p-label">{tr('Tên hiển thị', 'Label')}</label><Input id="p-label" value={sel.data.label} onChange={(e) => update({ label: e.target.value })} /></div>
               {sel.data.type === 'agent' && (<>
-                <div className="field"><label htmlFor="p-agent">Agent</label><Select id="p-agent" disabled={readOnly} value={sel.data.agent || undefined} placeholder={tr('Chọn agent', 'Choose an agent')} onChange={(x) => update({ agent: x })} options={agents.map((a) => ({ value: a.id, label: a.name }))} /></div>
+                <div className="field"><label htmlFor="p-agent">Agent</label><Select id="p-agent" disabled={readOnly} value={sel.data.agent || undefined} placeholder={tr('Chọn agent', 'Choose an agent')} onChange={(x) => update({ agent: x })} options={agents.map((a) => ({ value: a.id, label: `${a.name} · ${({ read: tr('Chỉ đọc', 'Read only'), write: tr('Đọc/ghi', 'Read/write'), test: tr('Đọc, chạy test', 'Read, run tests') })[a.perm]}` }))} /></div>
                 <div className="field"><label htmlFor="p-loops">{tr('Giới hạn số vòng', 'Round limit')}</label><InputNumber id="p-loops" disabled={readOnly} min={0} max={10} value={sel.data.maxLoops ?? 0} onChange={(x) => update({ maxLoops: x ?? 0 })} style={{ width: '100%' }} /><span className="hint">{tr('0 là không lặp. Node nằm trong vòng lặp phải có giới hạn.', '0 means no loop. A node inside a loop needs a limit.')}</span></div>
               </>)}
               {sel.data.type === 'condition' && <div className="field"><label htmlFor="p-expr">{tr('Điều kiện', 'Condition')}</label><Input id="p-expr" className="mono" value={sel.data.expr} onChange={(e) => update({ expr: e.target.value })} placeholder="exit_code == 0" /><span className="hint">{tr('Nhãn nhánh ra: "Đạt" và "Lỗi".', 'Label the branches "Pass" and "Fail".')}</span></div>}

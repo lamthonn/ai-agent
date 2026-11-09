@@ -6,7 +6,7 @@ import { projects } from '../data/sample';
 import { budgetState, convertUnit, defaultBudget, fmtAmount, fmtOther, saveBudget, usedToday, useBudget, type Budget } from '../data/budget';
 import { activeAdmins, isAdmin, projectsOf, removeAccount, saveAccount, setRules, useAccess, useMe, type Account } from '../data/access';
 import { Avatar } from '../components/StatusPill';
-import { pct } from '../lib/format';
+import { fold, pct } from '../lib/format';
 import { useTitle } from '../lib/useTitle';
 import { tr } from '../i18n';
 
@@ -126,8 +126,8 @@ function MembersSettings() {
           </div>
           <Form.Item label={tr('Vai trò', 'Role')} name="role"><Segmented options={[{ value: 'member', label: tr('Thành viên', 'Member') }, { value: 'admin', label: 'Admin' }]} /></Form.Item>
           {role !== 'admin' && (
-            <Form.Item label={tr('Project được vào và duyệt', 'Projects to view and approve')} name="projects" extra={tr('Thành viên chỉ thấy job của các project này.', 'The member sees jobs in these projects only.')}>
-              <Select mode="multiple" options={projects.map((p) => ({ value: p.id, label: p.name }))} placeholder={tr('Chọn project', 'Choose projects')} />
+            <Form.Item label={tr('Project được vào và duyệt', 'Projects to view and approve')} name="projects" rules={[{ required: true, type: 'array', min: 1, message: tr('Chọn ít nhất một project, nếu không người này sẽ không thấy job nào', 'Choose at least one project, or this person will see no jobs') }]} extra={tr('Thành viên chỉ thấy job của các project này.', 'The member sees jobs in these projects only.')}>
+              <Select mode="multiple" allowClear showSearch={{ filterOption: (input, o) => fold(String(o?.label ?? '')).includes(fold(input)) }} notFoundContent={tr('Không có project phù hợp', 'No matching project')} options={projects.map((p) => ({ value: p.id, label: p.name }))} placeholder={tr('Chọn project', 'Choose projects')} />
             </Form.Item>
           )}
           {editing?.id && <Form.Item label={tr('Trạng thái', 'Status')} name="active" valuePropName="checked" extra={tr('Khóa thì người này không đăng nhập được, quyền được giữ để mở lại.', 'A deactivated account cannot sign in; its access is kept for later.')}><Switch checkedChildren={tr('Hoạt động', 'Active')} unCheckedChildren={tr('Khóa', 'Off')} /></Form.Item>}
