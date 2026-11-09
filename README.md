@@ -25,7 +25,7 @@ Cần Node 20.19+ (khuyến nghị Node 22 hoặc 24).
 | Chờ duyệt | `#/approvals` |
 | Workflows / Builder | `#/workflows`, `#/workflows/ai-coding?v=2` |
 | Agents · Projects · Giám sát | `#/agents`, `#/projects`, `#/monitoring` |
-| Bug & test case | `#/sources/bugs`, `#/sources/cases`, `#/sources/links` |
+| Tích hợp | `#/integrations` (thẻ nền tảng), `#/integrations/google-sheets/items`, `.../lists`, `.../setup` |
 | Cài đặt (hạn mức chi phí) | `#/settings/budget` |
 
 Logo và màu lấy từ bộ nhận diện Codes Tech (`codes-tech-brand-assets.zip`), favicon trong `frontend/public/brand/`.

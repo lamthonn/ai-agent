@@ -1,4 +1,4 @@
-// Bug and test-case files linked to a project (Google Sheet). The worker reads the bug file every few minutes: each new row
+// Task and checklist sheets linked to a project (Google Sheets integration). The worker reads the task sheet every few minutes: each new row
 // is triaged by an agent and either waits for a person to run it ("suggest") or becomes a job on its own ("auto").
 // Status is written back to the sheet. Everything here comes from the API; nothing is kept in the browser.
 import { useCallback, useEffect, useState } from 'react';
@@ -11,13 +11,13 @@ export interface SheetLink { url: string; tab: string; columns: Record<string, s
 export interface BugSource extends SheetLink { filter: string; mode: 'suggest' | 'auto'; autoWorkflow: string; maxPerDay: number; writeBack: boolean }
 
 export const bugFields: { key: BugField; label: Text }[] = [
-  { key: 'id', label: { vi: 'Mã bug', en: 'Bug ID' } }, { key: 'title', label: { vi: 'Mô tả', en: 'Description' } },
-  { key: 'steps', label: { vi: 'Bước tái hiện', en: 'Steps to reproduce' } }, { key: 'severity', label: { vi: 'Mức độ', en: 'Severity' } },
-  { key: 'status', label: { vi: 'Trạng thái', en: 'Status' } }, { key: 'reporter', label: { vi: 'Người báo', en: 'Reporter' } },
+  { key: 'id', label: { vi: 'Mã việc', en: 'Item ID' } }, { key: 'title', label: { vi: 'Tiêu đề / nội dung', en: 'Title / content' } },
+  { key: 'steps', label: { vi: 'Chi tiết / các bước', en: 'Details / steps' } }, { key: 'severity', label: { vi: 'Mức ưu tiên', en: 'Priority' } },
+  { key: 'status', label: { vi: 'Trạng thái', en: 'Status' } }, { key: 'reporter', label: { vi: 'Người tạo', en: 'Created by' } },
 ];
 export const caseFields: { key: CaseField; label: Text }[] = [
-  { key: 'id', label: { vi: 'Mã test case', en: 'Case ID' } }, { key: 'module', label: { vi: 'Chức năng', en: 'Module' } },
-  { key: 'title', label: { vi: 'Tên test case', en: 'Case title' } }, { key: 'steps', label: { vi: 'Các bước', en: 'Steps' } },
+  { key: 'id', label: { vi: 'Mã mục', en: 'Item ID' } }, { key: 'module', label: { vi: 'Nhóm', en: 'Group' } },
+  { key: 'title', label: { vi: 'Tên mục', en: 'Item title' } }, { key: 'steps', label: { vi: 'Các bước', en: 'Steps' } },
   { key: 'expected', label: { vi: 'Kết quả mong đợi', en: 'Expected result' } },
 ];
 

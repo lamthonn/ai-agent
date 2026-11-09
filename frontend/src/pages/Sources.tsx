@@ -1,5 +1,6 @@
-// Bug & test case. Question: "Which bugs from our sheet are ready for an agent, and which test cases do we have?"
-// Tabs: the bug inbox (rows read from the bug file, triaged), the test cases, and the two file links. All data comes from the API.
+// Integrations > Google Sheets. Question: "Which rows of our sheet are ready for an agent, and what is on the reference list?"
+// Tabs: the work items (rows read from the task sheet, triaged), the checklist, and the two sheet links. All data comes from the API.
+// The API still calls the two sheets "bug" and "case"; only the words on screen are general.
 import { useState } from 'react';
 import { App, Button, Input, InputNumber, Segmented, Select, Switch, Table, Tabs } from 'antd';
 import { Link, useNavigate, useParams } from 'react-router-dom';
@@ -22,8 +23,8 @@ const cols = 'ABCDEFGHIJKLMNOP'.split('').map((c) => ({ value: c, label: tr(`C�
 const lastSync = (l: SheetLink) => (l.lastSyncAt ? when(utc(l.lastSyncAt)!) : tr('chưa lần nào', 'never'));
 
 export function Sources() {
-  useTitle('Bug & test case');
-  const { tab = 'bugs' } = useParams();
+  useTitle('Google Sheets');
+  const { tab = 'items' } = useParams();
   const nav = useNavigate();
   const { message } = App.useApp();
   const me = useMe();
@@ -34,7 +35,7 @@ export function Sources() {
   const { data, error, reload } = useSources(project);
   const [busy, setBusy] = useState<number | null>(null);
 
-  if (!project) return <div className="title-row"><div><h1>Bug & test case</h1><p className="sub">{tr('Bạn chưa được cấp quyền vào project nào.', 'You have no project access yet.')}</p></div></div>;
+  if (!project) return <div className="title-row"><div><h1>Google Sheets</h1><p className="sub">{tr('Bạn chưa được cấp quyền vào project nào.', 'You have no project access yet.')}</p></div></div>;
 
   const run = async (b: BugRow) => {
     setBusy(b.id);
@@ -52,7 +53,7 @@ export function Sources() {
   const empty = (what: string) => (
     <div className="empty">
       <p>{tr(`Project này chưa gắn ${what}.`, `This project has no ${what} linked.`)}</p>
-      <Button onClick={() => nav('/sources/links')}>{tr('Gắn file', 'Link a file')}</Button>
+      <Button onClick={() => nav('/integrations/google-sheets/setup')}>{tr('Gắn bảng', 'Link a sheet')}</Button>
     </div>
   );
   const failed = (l: SheetLink) => l.lastError && <p className="finding bad">{tr('Lần đọc gần nhất lỗi: ', 'The last read failed: ')}{l.lastError}</p>;
@@ -65,55 +66,56 @@ export function Sources() {
     <>
       <div className="title-row">
         <div>
-          <h1>Bug & test case</h1>
-          <p className="sub">{tr('Hệ thống đọc file bug định kỳ, agent phân loại từng dòng, rồi tạo job sửa.', 'The bug file is read on a schedule, an agent triages each row, then a fix job is created.')}</p>
+          <nav className="crumbs" aria-label="Breadcrumb"><Link to="/integrations">{tr('Tích hợp', 'Integrations')}</Link><Icon name="chevron" size={12} /><span>Google Sheets</span></nav>
+          <h1>Google Sheets</h1>
+          <p className="sub">{tr('Hệ thống đọc bảng công việc định kỳ, agent phân loại từng dòng, rồi tạo job chạy theo workflow bạn chọn.', 'The task sheet is read on a schedule, an agent triages each row, then a job runs through the workflow you choose.')}</p>
         </div>
         <div className="title-actions">
           <Select value={project} onChange={setProject} style={{ width: 200 }} options={mine.map((p) => ({ value: p.id, label: p.name }))} aria-label="Project" />
         </div>
       </div>
-      <Tabs activeKey={tab} onChange={(k) => nav(`/sources/${k}`)} items={[
-        { key: 'bugs', label: <span>Bug <span className="tab-count num">{bugs.length}</span></span> },
-        { key: 'cases', label: <span>Test case <span className="tab-count num">{cases.length}</span></span> },
-        { key: 'links', label: tr('File nguồn', 'Linked files') },
+      <Tabs activeKey={tab} onChange={(k) => nav(`/integrations/google-sheets/${k}`)} items={[
+        { key: 'items', label: <span>{tr('Công việc', 'Work items')} <span className="tab-count num">{bugs.length}</span></span> },
+        { key: 'lists', label: <span>{tr('Danh sách kiểm tra', 'Checklist')} <span className="tab-count num">{cases.length}</span></span> },
+        { key: 'setup', label: tr('Kết nối bảng', 'Sheet setup') },
       ]} />
       {error && <p className="finding bad">{error}</p>}
       {!data && !error && <p className="note">{tr('Đang tải…', 'Loading…')}</p>}
 
-      {data && tab === 'bugs' && (!data.bug ? empty(tr('file bug', 'a bug file')) : <>
+      {data && tab === 'items' && (!data.bug ? empty(tr('bảng công việc', 'a task sheet')) : <>
         <div className="filters">
           <span className="meta">{data.bug.mode === 'suggest' ? tr('Chế độ Chỉ đề xuất: bấm Chạy để tạo job.', 'Suggest only: press Run to create a job.') : tr(`Chế độ Tự chạy: tối đa ${data.bug.maxPerDay} job/ngày.`, `Auto: up to ${data.bug.maxPerDay} jobs a day.`)}</span>
           <span className="spacer" />
-          <span className="meta num">{tr(`Đọc lúc ${lastSync(data.bug)} · ${ready} bug sẵn sàng`, `Read at ${lastSync(data.bug)} · ${ready} ready`)}</span>
+          <span className="meta num">{tr(`Đọc lúc ${lastSync(data.bug)} · ${ready} việc sẵn sàng`, `Read at ${lastSync(data.bug)} · ${ready} ready`)}</span>
           <Button onClick={readNow}>{tr('Đọc lại ngay', 'Read now')}</Button>
         </div>
         {failed(data.bug)}
-        <Table<BugRow> rowKey="id" pagination={false} dataSource={bugs} scroll={{ x: 960 }} locale={{ emptyText: tr('Chưa có bug nào khớp bộ lọc. Worker đọc file mỗi 10 phút.', 'No bug matches the filter yet. The worker reads the file every 10 minutes.') }} columns={[
-          { title: 'Bug', key: 'b', render: (_, b) => <><span className="mono">{b.key}</span> <span className="ink">{b.title}</span><span className="sub">{tr(`Dòng ${b.row} · ${b.reporter || '—'}`, `Row ${b.row} · ${b.reporter || '—'}`)}</span></> },
-          { title: tr('Mức độ', 'Severity'), key: 's', width: 110, render: (_, b) => sevText(b.severity) },
+        <Table<BugRow> rowKey="id" pagination={false} dataSource={bugs} scroll={{ x: 960 }} locale={{ emptyText: tr('Chưa có việc nào khớp bộ lọc. Worker đọc bảng mỗi 10 phút.', 'No item matches the filter yet. The worker reads the sheet every 10 minutes.') }} columns={[
+          { title: tr('Công việc', 'Work item'), key: 'b', render: (_, b) => <><span className="mono">{b.key}</span> <span className="ink">{b.title}</span><span className="sub">{tr(`Dòng ${b.row} · ${b.reporter || '—'}`, `Row ${b.row} · ${b.reporter || '—'}`)}</span></> },
+          { title: tr('Mức ưu tiên', 'Priority'), key: 's', width: 110, render: (_, b) => sevText(b.severity) },
           { title: tr('Agent phân loại', 'Triage'), key: 't', width: 340, render: (_, b) => <><span className={`pill ${triageTone(b.triage)}`}>{triageText(b.triage)}</span>{b.workflow && workflowById[b.workflow] && <span className="sub">→ {tx(workflowById[b.workflow].name)}</span>}{b.note && <span className="sub">{b.note}</span>}</> },
           { title: '', key: 'a', width: 130, align: 'right', render: (_, b) => b.jobId ? <Link to={`/jobs/${b.jobId}`} className="mono">{b.jobId}</Link>
             : b.triage === 'ready' ? <Button size="small" type="primary" loading={busy === b.id} icon={<Icon name="play" size={12} />} onClick={() => run(b)}>{tr('Chạy', 'Run')}</Button> : null },
         ]} />
-        <p className="note">{data.bug.writeBack ? tr('Trạng thái và mã job được ghi ngược vào cột Trạng thái của file bug. Merge vẫn luôn cần người duyệt.', 'Status and job ID are written back to the bug file’s Status column. Merging always needs a person’s approval.') : tr('Không ghi ngược vào file bug (đang tắt). Merge vẫn luôn cần người duyệt.', 'Nothing is written back to the bug file (switched off). Merging always needs a person’s approval.')}</p>
+        <p className="note">{data.bug.writeBack ? tr('Trạng thái và mã job được ghi ngược vào cột Trạng thái của bảng. Các bước cần duyệt trong workflow vẫn luôn chờ người duyệt.', 'Status and job ID are written back to the sheet’s Status column. Approval steps in the workflow always wait for a person.') : tr('Không ghi ngược vào bảng (đang tắt). Các bước cần duyệt trong workflow vẫn luôn chờ người duyệt.', 'Nothing is written back to the sheet (switched off). Approval steps in the workflow always wait for a person.')}</p>
       </>)}
 
-      {data && tab === 'cases' && (!data.case ? empty(tr('file test case', 'a test-case file')) : <>
+      {data && tab === 'lists' && (!data.case ? empty(tr('danh sách kiểm tra', 'a checklist')) : <>
         <div className="filters">
-          <span className="meta num">{tr(`${cases.length} test case · đọc lúc ${lastSync(data.case)}`, `${cases.length} cases · read at ${lastSync(data.case)}`)}</span>
+          <span className="meta num">{tr(`${cases.length} mục · đọc lúc ${lastSync(data.case)}`, `${cases.length} items · read at ${lastSync(data.case)}`)}</span>
           <span className="spacer" />
           <Button onClick={readNow}>{tr('Đọc lại ngay', 'Read now')}</Button>
         </div>
         {failed(data.case)}
         <Table<CaseRow> rowKey="key" pagination={false} dataSource={cases} scroll={{ x: 760 }} columns={[
-          { title: 'Test case', key: 'c', render: (_, c) => <><span className="mono">{c.key}</span> <span className="ink">{c.title}</span><span className="sub">{c.module}</span></> },
+          { title: tr('Mục kiểm tra', 'Checklist item'), key: 'c', render: (_, c) => <><span className="mono">{c.key}</span> <span className="ink">{c.title}</span><span className="sub">{c.module}</span></> },
           { title: tr('Kết quả mong đợi', 'Expected'), key: 'e', render: (_, c) => c.expected },
           { title: tr('Số bước', 'Steps'), key: 'n', width: 90, align: 'right', className: 'num', render: (_, c) => c.steps },
         ]} />
-        <p className="note">{tr('Hiện mới đọc và hiển thị test case. Chạy bộ test case bằng agent cần một workflow Kiểm thử chưa có trên server.', 'For now the cases are only read and listed. Running them with an agent needs a test-case workflow that the server does not have yet.')}</p>
+        <p className="note">{tr('Hiện mới đọc và hiển thị danh sách. Để agent chạy từng mục cần một workflow kiểm thử chưa có trên server.', 'For now the list is only read and shown. Running each item with an agent needs a checklist workflow that the server does not have yet.')}</p>
       </>)}
 
-      {data && tab === 'links' && <Links key={project} project={project} admin={admin} data={data} onSaved={reload} />}
+      {data && tab === 'setup' && <Links key={project} project={project} admin={admin} data={data} onSaved={reload} />}
     </>
   );
 }
@@ -151,11 +153,11 @@ function Links({ project, admin, data, onSaved }: { project: string; admin: bool
 
   return (
     <fieldset disabled={!admin} className="props-fields">
-      {!admin && <p className="note">{tr('Chỉ admin sửa được file nguồn.', 'Only an admin can change the linked files.')}</p>}
+      {!admin && <p className="note">{tr('Chỉ admin sửa được kết nối bảng.', 'Only an admin can change the sheet links.')}</p>}
       <section className="set-row">
         <div className="set-label">
-          <h2>{tr('File bug', 'Bug file')}</h2>
-          <p>{tr('Mỗi dòng là một bug; dòng đầu là tiêu đề. Hệ thống đọc lại sau mỗi 10 phút; dòng đã đọc được nhận theo Mã bug nên không tạo job trùng.', 'One bug per row; the first row is the header. Read again every 10 minutes; rows are matched by Bug ID, so no job is created twice.')}</p>
+          <h2>{tr('Bảng công việc', 'Task sheet')}</h2>
+          <p>{tr('Mỗi dòng là một việc cần làm; dòng đầu là tiêu đề. Hệ thống đọc lại sau mỗi 10 phút; dòng đã đọc được nhận theo Mã nên không tạo job trùng.', 'One piece of work per row; the first row is the header. Read again every 10 minutes; rows are matched by ID, so no job is created twice.')}</p>
           {data.serviceAccount
             ? <p className="hint">{tr('Chia sẻ file cho', 'Share the file with')} <span className="mono">{data.serviceAccount}</span> {tr('(quyền sửa để ghi trạng thái ngược lại).', '(edit access, to write status back).')}</p>
             : <p className="hint">{tr('Worker chưa có khóa tài khoản dịch vụ Google: chỉ đọc được file bật “Bất kỳ ai có link”, và chưa ghi được trạng thái ngược vào file.', 'The worker has no Google service-account key: it can only read a file shared as “anyone with the link”, and cannot write status back.')}</p>}
@@ -165,23 +167,23 @@ function Links({ project, admin, data, onSaved }: { project: string; admin: bool
           {urlField('bug', bugs, setB)}
           {mapping(bugFields, bugs, setB)}
           <div className="field"><label htmlFor="bug-filter">{tr('Chỉ lấy dòng', 'Only rows where')}</label><Input id="bug-filter" value={bugs.filter} onChange={(e) => setB({ filter: e.target.value })} placeholder="Trạng thái = Mới" /></div>
-          <div className="field"><span className="label-like">{tr('Khi có bug sẵn sàng', 'When a bug is ready')}</span>
+          <div className="field"><span className="label-like">{tr('Khi có việc sẵn sàng', 'When an item is ready')}</span>
             <Segmented value={bugs.mode} onChange={(m) => setB({ mode: m as BugSource['mode'] })} options={[{ value: 'suggest', label: tr('Chỉ đề xuất', 'Suggest only') }, { value: 'auto', label: tr('Tự chạy', 'Run automatically') }]} />
-            <span className="hint">{bugs.mode === 'suggest' ? tr('Agent phân loại sẵn; người có quyền vào project bấm Chạy để tạo job.', 'The agent triages; someone with project access presses Run.') : tr('Bug sẵn sàng thành job ngay, trong giới hạn số job/ngày và hạn mức chi phí. Job vẫn dừng ở bước duyệt kế hoạch và duyệt merge.', 'Ready bugs become jobs at once, within the jobs-per-day cap and the cost limit. Jobs still stop at plan and merge approval.')}</span>
+            <span className="hint">{bugs.mode === 'suggest' ? tr('Agent phân loại sẵn; người có quyền vào project bấm Chạy để tạo job.', 'The agent triages; someone with project access presses Run.') : tr('Việc sẵn sàng thành job ngay, trong giới hạn số job/ngày và hạn mức chi phí. Job vẫn dừng ở bước duyệt kế hoạch và duyệt merge.', 'Ready items become jobs at once, within the jobs-per-day cap and the cost limit. Jobs still stop at plan and merge approval.')}</span>
           </div>
           {bugs.mode === 'auto' && <div className="form-2">
             <div className="field"><label htmlFor="bug-wf">{tr('Workflow dùng khi tự chạy', 'Workflow for automatic runs')}</label><Select id="bug-wf" value={bugs.autoWorkflow} onChange={(w) => setB({ autoWorkflow: w })} options={workflows.filter((w) => w.id !== 'test-cases' && w.id !== 'review-only').map((w) => ({ value: w.id, label: tx(w.name) }))} /></div>
             <div className="field"><label htmlFor="bug-max">{tr('Tối đa job mỗi ngày', 'Max jobs a day')}</label><InputNumber id="bug-max" min={1} max={20} value={bugs.maxPerDay} onChange={(n) => setB({ maxPerDay: n ?? 1 })} style={{ width: '100%' }} /></div>
           </div>}
-          <div className="switch-row"><div><div className="ink">{tr('Ghi kết quả vào file bug', 'Write results to the bug file')}</div><div className="hint">{tr('Cột Trạng thái: Đang xử lý / Chờ duyệt / Đã sửa / Không tự sửa được, kèm mã job.', 'Status column: In progress / Awaiting approval / Fixed / Could not fix, with the job ID.')}</div></div>
-            <Switch checked={bugs.writeBack} onChange={(v) => setB({ writeBack: v })} aria-label={tr('Ghi kết quả vào file bug', 'Write results to the bug file')} /></div>
+          <div className="switch-row"><div><div className="ink">{tr('Ghi kết quả vào bảng', 'Write results to the sheet')}</div><div className="hint">{tr('Cột Trạng thái: Đang xử lý / Chờ duyệt / Đã sửa / Không tự sửa được, kèm mã job.', 'Status column: In progress / Awaiting approval / Fixed / Could not fix, with the job ID.')}</div></div>
+            <Switch checked={bugs.writeBack} onChange={(v) => setB({ writeBack: v })} aria-label={tr('Ghi kết quả vào bảng', 'Write results to the sheet')} /></div>
           <div className="form-actions"><Button type="primary" loading={saving === 'bug'} onClick={() => save('bug')}>{tr('Lưu', 'Save')}</Button></div>
         </div>
       </section>
       <section className="set-row">
         <div className="set-label">
-          <h2>{tr('File test case', 'Test-case file')}</h2>
-          <p>{tr('Mỗi dòng là một test case; dòng đầu là tiêu đề.', 'One case per row; the first row is the header.')}</p>
+          <h2>{tr('Danh sách kiểm tra', 'Checklist')}</h2>
+          <p>{tr('Mỗi dòng là một mục; dòng đầu là tiêu đề.', 'One item per row; the first row is the header.')}</p>
           {data.case?.lastError && <p className="finding bad">{data.case.lastError}</p>}
         </div>
         <div className="set-panel">
